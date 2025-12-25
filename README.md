@@ -6,11 +6,10 @@
   <title>Web Evolution Quiz</title>
   <style>
     /*
-      Base styling inspired by the original Yekuiz layout: a dark header with
+      Base styling inspired by the original layout: a dark header with
       centered navigation links and light content area. Cards are used for
-      the quiz category selection. The quiz itself borrows the pop‑up
-      overlay and scoreboard behaviour from the prototype. All styles are
-      kept simple and use only concepts covered in basic HTML/CSS labs.
+      the quiz category selection. The quiz itself uses a scoreboard and
+      result display. All styles use basic HTML/CSS concepts.
     */
     * {
       box-sizing: border-box;
@@ -93,6 +92,11 @@
     }
     .quiz-card:hover {
       background: #eaeaea;
+    }
+    .quiz-card p.score {
+      font-size: 0.9em;
+      color: #555;
+      margin-top: 0.5em;
     }
     /* Quiz container */
     #quiz-container {
@@ -192,45 +196,49 @@
       color: #6c757d;
       font-weight: bold;
     }
-    /* Overlay pop‑up */
-    #overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    #overlay .overlay-content {
+    /* Auth (Login/Register) form styling */
+    .auth-container {
       background: #fff;
-      padding: 1.5em;
-      border-radius: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 300px;
+      max-width: 100%;
+      margin: 1em auto;
+      padding: 1em;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       text-align: center;
-      width: 90%;
-      max-width: 400px;
     }
-    #overlay .overlay-content h3 {
-      margin-top: 0;
+    .auth-container h2 {
       margin-bottom: 0.5em;
     }
-    #overlay .overlay-content p {
-      margin-bottom: 1em;
+    .auth-container input {
+      width: 100%;
+      padding: 0.5em;
+      margin: 0.5em 0;
+      border: 1px solid #888;
+      border-radius: 4px;
+      font-size: 1em;
     }
-    #overlay .overlay-content button {
-      padding: 0.6em 1.2em;
-      background-color: #007bff;
-      color: #fff;
+    .auth-container button {
+      width: 100%;
+      padding: 0.6em;
+      margin: 0.5em 0;
       border: none;
       border-radius: 4px;
+      background: #007bff;
+      color: #fff;
+      font-size: 1em;
       cursor: pointer;
-      font-size: 0.9rem;
     }
-    #overlay .overlay-content button:hover {
+    .auth-container button:hover {
       opacity: 0.9;
+    }
+    .auth-container a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .auth-container a:hover {
+      text-decoration: underline;
     }
     /* About section styling */
     #about {
@@ -246,6 +254,8 @@
         <li><a href="#" onclick="showSection('home')">Home</a></li>
         <li><a href="#" onclick="showSection('quizlist')">Take the Quiz</a></li>
         <li><a href="#" onclick="showSection('about')">About Us</a></li>
+        <li id="nav-auth"><a href="#" onclick="showSection('auth')">Login/Register</a></li>
+        <li id="nav-user" style="display:none;">Welcome, <span id="username-display"></span>! (<a href="#" onclick="logout()">Logout</a>)</li>
       </ul>
     </nav>
   </header>
@@ -287,10 +297,15 @@
         <img id="question-image" src="" alt="Question image">
         <div id="question-text" class="question-text"></div>
         <ul id="answers"></ul>
-        <div id="scoreboard">Correct: <span id="correct-count">0</span> | Wrong: <span id="wrong-count">0</span> | Unanswered: <span id="unanswered-count">0</span></div>
+        <div id="scoreboard">
+          Correct: <span id="correct-count">0</span> | 
+          Wrong: <span id="wrong-count">0</span> | 
+          Unanswered: <span id="unanswered-count">0</span>
+        </div>
         <div id="quiz-controls">
           <button id="reset-button" onclick="resetQuiz()">Reset</button>
           <button id="skip-button" onclick="skipQuestion()">Skip</button>
+          <button id="next-button" onclick="nextQuestion()">Next</button>
         </div>
         <div id="result"></div>
       </div>
@@ -302,275 +317,547 @@
       <p>This quiz application is a project for an introductory web development course. It demonstrates basic HTML structure, CSS styling, and JavaScript for interactivity. All content and logic are contained in one HTML file. No external libraries were used, only the concepts taught in the course are applied here.</p>
       <p>Created by: [Your Name]</p>
     </section>
-  </main>
 
-  <!-- Pop‑up Overlay -->
-  <div id="overlay">
-    <div class="overlay-content">
-      <h3 id="overlay-title"></h3>
-      <p id="overlay-message"></p>
-      <button onclick="nextQuestion()">Next Question</button>
-    </div>
-  </div>
+    <!-- Login/Register Section -->
+    <section id="auth">
+      <div class="auth-container">
+        <h2 id="auth-title">Login</h2>
+        <div id="login-form">
+          <input type="text" id="login-username" placeholder="Username">
+          <input type="password" id="login-password" placeholder="Password">
+          <button onclick="performLogin()">Login</button>
+          <p>Don't have an account? <a href="#" onclick="showRegisterForm()">Register here</a></p>
+        </div>
+        <div id="register-form" style="display:none;">
+          <input type="text" id="reg-username" placeholder="Username">
+          <input type="password" id="reg-password" placeholder="Password">
+          <input type="password" id="reg-confirm" placeholder="Confirm Password">
+          <button onclick="performRegister()">Register</button>
+          <p>Already have an account? <a href="#" onclick="showLoginForm()">Login here</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <script>
     /*
-      JavaScript for the quiz logic.  We maintain separate question sets for
-      each web era.  Each question has a text, an image (using a base64
-      placeholder by default), and an array of answer objects with a
-      boolean indicating correctness.  The functions below handle
-      navigation, showing questions, processing answers, displaying
-      overlays, and tracking scores.
+      JavaScript for the quiz logic and user authentication.
+      It handles navigation, user login/register, localStorage persistence,
+      question randomization, and score tracking.
     */
+    // Local storage user management
+    let users = JSON.parse(localStorage.getItem('users')) || {};
+    let currentUser = localStorage.getItem('currentUser') || null;
 
-    // Placeholder image used for all questions (can be replaced with your own)
-    const placeholderImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAEsCAIAAABi1XKVAAAEYElEQVR4nO3awWqEMBRA0ZnSj/L/V/msLgQRnaHC0OqVc1YhuHir\n1572';
+    // Update nav based on login status
+    if (currentUser) {
+      document.getElementById('username-display').textContent = currentUser;
+      document.getElementById('nav-auth').style.display = 'none';
+      document.getElementById('nav-user').style.display = 'block';
+    }
 
-    // Question sets for each category; each has 5 questions as requested.
+    // Placeholder image (1x1 pixel transparent GIF)
+    const placeholderImage = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+
+    // Question sets for each category (10 questions each)
     const questionSets = {
       web1: [
         {
-          text: 'Web 1.0 Q1: Lorem ipsum dolor sit amet, consectetur adipiscing?',
+          text: 'What best describes Web 1.0?',
           image: placeholderImage,
           answers: [
-            { text: 'Lorem ipsum dolor sit.', correct: true },
-            { text: 'Consectetur adipiscing elit.', correct: false },
-            { text: 'Sed do eiusmod tempor.', correct: false },
-            { text: 'Incididunt ut labore et dolore.', correct: false }
+            { text: 'Static, read-only websites with little user interaction.', correct: true },
+            { text: 'Interactive social platforms with user-generated content.', correct: false },
+            { text: 'Intelligent web with semantic data for machines.', correct: false },
+            { text: 'Immersive and fully virtual reality-based experiences.', correct: false }
           ]
         },
         {
-          text: 'Web 1.0 Q2: Sed ut perspiciatis unde omnis iste natus?',
+          text: 'Which feature is characteristic of Web 1.0?',
           image: placeholderImage,
           answers: [
-            { text: 'At vero eos et accusamus.', correct: false },
-            { text: 'Doloremque laudantium totam.', correct: false },
-            { text: 'Totam rem aperiam.', correct: true },
-            { text: 'Eaque ipsa quae ab illo.', correct: false }
+            { text: 'Mostly static web pages with fixed content.', correct: true },
+            { text: 'Social networking and blogging platforms.', correct: false },
+            { text: 'Personalized AI-driven content delivery.', correct: false },
+            { text: 'User collaboration and content sharing.', correct: false }
           ]
         },
         {
-          text: 'Web 1.0 Q3: But I must explain to you how all this mistaken idea?',
+          text: 'During the Web 1.0 era, websites primarily offered:',
           image: placeholderImage,
           answers: [
-            { text: 'Denouncing pleasure and praising pain.', correct: true },
-            { text: 'Neque porro quisquam est.', correct: false },
-            { text: 'Qui dolorem ipsum quia dolor.', correct: false },
-            { text: 'Sit amet, consectetur.', correct: false }
+            { text: 'Static information and hyperlinks for navigation.', correct: true },
+            { text: 'Platforms for extensive user interaction and content creation.', correct: false },
+            { text: 'Semantic data understood by AI.', correct: false },
+            { text: 'Virtual reality environments for users.', correct: false }
           ]
         },
         {
-          text: 'Web 1.0 Q4: On the other hand, we denounce with righteous indignation?',
+          text: 'Which statement is true about Web 1.0?',
           image: placeholderImage,
           answers: [
-            { text: 'Beguiled and demoralized by pleasure.', correct: false },
-            { text: 'By the charms of pleasure.', correct: false },
-            { text: 'Indignation and dislike men.', correct: true },
-            { text: 'Denouncing pleasure and pain.', correct: false }
+            { text: 'It was dominated by static, read-only content provided by site owners.', correct: true },
+            { text: 'It introduced social media and interactive content sharing.', correct: false },
+            { text: 'It featured intelligent agents understanding user context.', correct: false },
+            { text: 'It integrated real-time communication and collaboration by default.', correct: false }
           ]
         },
         {
-          text: 'Web 1.0 Q5: At vero eos et accusamus et iusto odio dignissimos?',
+          text: 'Web 1.0 primarily spans which timeframe?',
           image: placeholderImage,
           answers: [
-            { text: 'Qui blanditiis praesentium.', correct: false },
-            { text: 'Voluptatum deleniti atque.', correct: false },
-            { text: 'Corrupti quos dolores et quas.', correct: true },
-            { text: 'Molestiae excepturi sint.', correct: false }
+            { text: 'Roughly the mid-1990s to early 2000s.', correct: true },
+            { text: 'Between 2005 and 2015.', correct: false },
+            { text: 'From 2015 to the present day.', correct: false },
+            { text: 'It is a term for the future web.', correct: false }
+          ]
+        },
+        {
+          text: 'Which of these is an example of a Web 1.0 era website?',
+          image: placeholderImage,
+          answers: [
+            { text: 'A personal GeoCities homepage with static text and images.', correct: true },
+            { text: 'A social networking site like Facebook.', correct: false },
+            { text: 'A collaborative encyclopedia like Wikipedia.', correct: false },
+            { text: 'A video sharing platform like YouTube.', correct: false }
+          ]
+        },
+        {
+          text: 'In Web 1.0, websites were likened to online ______ due to their static nature.',
+          image: placeholderImage,
+          answers: [
+            { text: 'brochures (read-only pages)', correct: true },
+            { text: 'forums (discussion boards)', correct: false },
+            { text: 'marketplaces (e-commerce hubs)', correct: false },
+            { text: 'social feeds (user status updates)', correct: false }
+          ]
+        },
+        {
+          text: 'Which phrase best describes the flow of information in Web 1.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'One-way: from website to user only.', correct: true },
+            { text: 'Two-way: constant interaction between users and site.', correct: false },
+            { text: 'Collaborative: users heavily create and modify content.', correct: false },
+            { text: 'Automated: machine-to-machine data exchange.', correct: false }
+          ]
+        },
+        {
+          text: 'Web 1.0 sites typically had ______ user interaction.',
+          image: placeholderImage,
+          answers: [
+            { text: 'little to no', correct: true },
+            { text: 'extensive', correct: false },
+            { text: 'real-time', correct: false },
+            { text: 'personalized', correct: false }
+          ]
+        },
+        {
+          text: 'Which of the following was NOT a common aspect of Web 1.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Social media and sharing features.', correct: true },
+            { text: 'Static informational content.', correct: false },
+            { text: 'Web directories for finding sites.', correct: false },
+            { text: 'Personal standalone homepages.', correct: false }
           ]
         }
       ],
       web2: [
         {
-          text: 'Web 2.0 Q1: Lorem ipsum dolor sit amet?',
+          text: 'What is a defining characteristic of Web 2.0?',
           image: placeholderImage,
           answers: [
-            { text: 'A', correct: false },
-            { text: 'B', correct: true },
-            { text: 'C', correct: false },
-            { text: 'D', correct: false }
+            { text: 'User-generated content and participatory culture.', correct: true },
+            { text: 'Static, read-only web pages only.', correct: false },
+            { text: 'Fully AI-driven content with semantic understanding.', correct: false },
+            { text: 'The complete absence of social interaction online.', correct: false }
           ]
         },
         {
-          text: 'Web 2.0 Q2: Sed ut perspiciatis unde omnis?',
+          text: 'Which of the following is an example of a Web 2.0 application?',
           image: placeholderImage,
           answers: [
-            { text: 'A', correct: false },
-            { text: 'B', correct: false },
-            { text: 'C', correct: true },
-            { text: 'D', correct: false }
+            { text: 'A social networking site like Facebook.', correct: true },
+            { text: 'A 1990s personal static webpage.', correct: false },
+            { text: 'An AI personal assistant that reads websites for you.', correct: false },
+            { text: 'A basic HTML page with no interactive features.', correct: false }
           ]
         },
         {
-          text: 'Web 2.0 Q3: But I must explain to you?',
+          text: 'Web 2.0 is often called the ______ web.',
           image: placeholderImage,
           answers: [
-            { text: 'A', correct: false },
-            { text: 'B', correct: false },
-            { text: 'C', correct: true },
-            { text: 'D', correct: false }
+            { text: 'read-write', correct: true },
+            { text: 'read-only', correct: false },
+            { text: 'semantic', correct: false },
+            { text: 'intelligent', correct: false }
           ]
         },
         {
-          text: 'Web 2.0 Q4: On the other hand, we denounce?',
+          text: 'Which technology became popular during Web 2.0 for dynamic page updates without full reloads?',
           image: placeholderImage,
           answers: [
-            { text: 'A', correct: false },
-            { text: 'B', correct: true },
-            { text: 'C', correct: false },
-            { text: 'D', correct: false }
+            { text: 'AJAX (Asynchronous JavaScript and XML)', correct: true },
+            { text: 'Dial-up modems', correct: false },
+            { text: 'CGI scripts requiring page reloads', correct: false },
+            { text: 'Blockchain transactions', correct: false }
           ]
         },
         {
-          text: 'Web 2.0 Q5: At vero eos et accusamus?',
+          text: 'Which statement is true about Web 2.0?',
           image: placeholderImage,
           answers: [
-            { text: 'A', correct: true },
-            { text: 'B', correct: false },
-            { text: 'C', correct: false },
-            { text: 'D', correct: false }
+            { text: 'Users can interact and collaborate via social media, blogs, and wikis.', correct: true },
+            { text: 'Content is only provided by webmasters, with no user contributions.', correct: false },
+            { text: 'It refers to making web content understandable to machines.', correct: false },
+            { text: 'It is characterized by static websites with no interactive elements.', correct: false }
+          ]
+        },
+        {
+          text: 'What innovation differentiates Web 2.0 from Web 1.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'The ability for users to easily create and share content online.', correct: true },
+            { text: 'The introduction of the first web browsers in the 1990s.', correct: false },
+            { text: 'The use of hypertext links to connect pages.', correct: false },
+            { text: 'The reliance on punchcard inputs for web navigation.', correct: false }
+          ]
+        },
+        {
+          text: 'Which of these is a Web 2.0 era concept?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Blogs and social media platforms.', correct: true },
+            { text: 'Static online brochures with no user feedback.', correct: false },
+            { text: 'Linked open data and ontologies.', correct: false },
+            { text: 'Text-only bulletin board systems accessed via telnet.', correct: false }
+          ]
+        },
+        {
+          text: 'The term "Web 2.0" became popular around which year?',
+          image: placeholderImage,
+          answers: [
+            { text: '2004', correct: true },
+            { text: '1994', correct: false },
+            { text: '2015', correct: false },
+            { text: '2020', correct: false }
+          ]
+        },
+        {
+          text: 'Which is NOT typically associated with Web 2.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Static read-only websites with no user contribution.', correct: true },
+            { text: 'Wikipedia and other collaborative projects.', correct: false },
+            { text: 'Social networking and media sharing sites.', correct: false },
+            { text: 'Blogging and content management platforms.', correct: false }
+          ]
+        },
+        {
+          text: 'What role do users play in Web 2.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'They are both content consumers and content producers.', correct: true },
+            { text: 'They only passively view content provided by companies.', correct: false },
+            { text: 'They have no interaction with web content at all.', correct: false },
+            { text: 'They are replaced by AI in creating all content.', correct: false }
           ]
         }
       ],
       web3: [
         {
-          text: 'Web 3.0 Q1: In a free hour, when our power of choice is untrammelled?',
+          text: 'Web 3.0 is often referred to as the ______ web.',
           image: placeholderImage,
           answers: [
-            { text: 'And when nothing prevents.', correct: false },
-            { text: 'Our being able to do what we like best.', correct: false },
-            { text: 'Every pleasure is to be welcomed.', correct: true },
-            { text: 'Every pain avoided.', correct: false }
+            { text: 'semantic', correct: true },
+            { text: 'social', correct: false },
+            { text: 'static', correct: false },
+            { text: 'physical', correct: false }
           ]
         },
         {
-          text: 'Web 3.0 Q2: But in certain circumstances and owing to the claims of duty?',
+          text: 'Which is a key feature of Web 3.0?',
           image: placeholderImage,
           answers: [
-            { text: 'Ut et voluptates repudiandae.', correct: false },
-            { text: 'Illum quo minus id quod maxime.', correct: false },
-            { text: 'Placeat facere possimus.', correct: true },
-            { text: 'Omnis voluptas assumenda est.', correct: false }
+            { text: 'Semantic metadata that allows machines to understand content.', correct: true },
+            { text: 'Static content delivered without any interaction.', correct: false },
+            { text: 'Web pages where all content is user-generated without machine processing.', correct: false },
+            { text: 'Lack of any social media or user participation.', correct: false }
           ]
         },
         {
-          text: 'Web 3.0 Q3: These cases are perfectly simple and easy to distinguish?',
+          text: 'What technology is commonly associated with enabling Web 3.0 features?',
           image: placeholderImage,
           answers: [
-            { text: 'At vero eos et accusamus.', correct: false },
-            { text: 'Et iusto odio dignissimos.', correct: false },
-            { text: 'Ducimus qui blanditiis.', correct: false },
-            { text: 'Praesentium voluptatum deleniti.', correct: true }
+            { text: 'Artificial Intelligence and machine learning.', correct: true },
+            { text: 'Email and basic HTTP without scripting.', correct: false },
+            { text: 'Cascading Style Sheets (CSS) for layout.', correct: false },
+            { text: 'Dial-up internet modems for connectivity.', correct: false }
           ]
         },
         {
-          text: 'Web 3.0 Q4: On the other hand, we denounce with righteous indignation?',
+          text: 'Which statement is true about Web 3.0?',
           image: placeholderImage,
           answers: [
-            { text: 'The wise man therefore always holds.', correct: true },
-            { text: 'In these matters to this principle.', correct: false },
-            { text: 'He rejects pleasures to secure.', correct: false },
-            { text: 'But because those who do not know.', correct: false }
+            { text: 'It aims to make web content machine-readable and contextually relevant.', correct: true },
+            { text: 'It was the first phase of the web with read-only content.', correct: false },
+            { text: 'It is centered only on user social interactions without automation.', correct: false },
+            { text: 'It refers to browsing the web on mobile devices.', correct: false }
           ]
         },
         {
-          text: 'Web 3.0 Q5: Ut enim ad minima veniam, quis nostrum exercitationem?',
+          text: 'Web 3.0 often focuses on personalization. This means:',
           image: placeholderImage,
           answers: [
-            { text: 'Ullam corporis suscipit laboriosam.', correct: false },
-            { text: 'Nisi ut aliquid ex ea commodi.', correct: true },
-            { text: 'Consequatur autem.', correct: false },
-            { text: 'Quis autem vel eum iure.', correct: false }
+            { text: 'Websites can tailor content to individual users using AI.', correct: true },
+            { text: 'All content is exclusively created by the user community.', correct: false },
+            { text: 'Pages are static and identical for every user.', correct: false },
+            { text: 'User data or preferences are not considered at all.', correct: false }
+          ]
+        },
+        {
+          text: 'An example of a Web 3.0 application is one that:',
+          image: placeholderImage,
+          answers: [
+            { text: 'Aggregates data from multiple sources and understands context (e.g., intelligent assistants).', correct: true },
+            { text: 'Allows only one-way publishing of content with no feedback.', correct: false },
+            { text: 'Relies solely on user tags without any machine processing.', correct: false },
+            { text: 'Provides no interactive or dynamic features whatsoever.', correct: false }
+          ]
+        },
+        {
+          text: 'Which concept is most closely associated with Web 3.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'The Semantic Web as envisioned by Tim Berners-Lee.', correct: true },
+            { text: 'Static personal homepages hosted on GeoCities.', correct: false },
+            { text: 'Social networking websites like MySpace.', correct: false },
+            { text: 'Text-based bulletin boards accessed via telnet.', correct: false }
+          ]
+        },
+        {
+          text: 'Compared to Web 2.0, Web 3.0 relies more on:',
+          image: placeholderImage,
+          answers: [
+            { text: 'Intelligent machine processing of data and metadata.', correct: true },
+            { text: 'User-generated content without any machine interpretation.', correct: false },
+            { text: 'Static web pages and manual directory listings.', correct: false },
+            { text: 'One-way communication from provider to consumer.', correct: false }
+          ]
+        },
+        {
+          text: 'Which of the following is NOT typically related to Web 3.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Personal blogs and simple web forums.', correct: true },
+            { text: 'RDF (Resource Description Framework) data structures.', correct: false },
+            { text: 'SPARQL query language for databases.', correct: false },
+            { text: 'Ontologies defining relationships between data.', correct: false }
+          ]
+        },
+        {
+          text: 'Which web era emphasizes machine understanding and intelligent data linking?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Web 3.0', correct: true },
+            { text: 'Web 1.0', correct: false },
+            { text: 'Web 2.0', correct: false },
+            { text: 'None of the above', correct: false }
           ]
         }
       ],
       web4: [
         {
-          text: 'Web 4.0 Q1: Nor again is there anyone who loves or pursues?',
+          text: 'Web 4.0 is often described as the ______ web.',
           image: placeholderImage,
           answers: [
-            { text: 'Or desires to obtain pain.', correct: false },
-            { text: 'Of itself, because it is pain.', correct: false },
-            { text: 'But occasionally circumstances occur.', correct: true },
-            { text: 'Which toil and pain can procure.', correct: false }
+            { text: 'symbiotic', correct: true },
+            { text: 'static', correct: false },
+            { text: 'social media', correct: false },
+            { text: 'semantic', correct: false }
           ]
         },
         {
-          text: 'Web 4.0 Q2: In a free hour, when our power of choice is untrammelled?',
+          text: 'Which best describes the vision of Web 4.0?',
           image: placeholderImage,
           answers: [
-            { text: 'And when nothing prevents.', correct: false },
-            { text: 'Our being able to do what we like best.', correct: false },
-            { text: 'Every pleasure is to be welcomed.', correct: true },
-            { text: 'Every pain avoided.', correct: false }
+            { text: 'An intelligent web that seamlessly integrates into daily life via ubiquitous devices.', correct: true },
+            { text: 'A strictly read-only web of static pages.', correct: false },
+            { text: 'A web dominated entirely by user blog content.', correct: false },
+            { text: 'The introduction of hypertext for the first time.', correct: false }
           ]
         },
         {
-          text: 'Web 4.0 Q3: But in certain circumstances and owing to the claims of duty?',
+          text: 'What is a potential feature of Web 4.0?',
           image: placeholderImage,
           answers: [
-            { text: 'Ut et voluptates repudiandae.', correct: false },
-            { text: 'Illum quo minus id quod maxime.', correct: false },
-            { text: 'Placeat facere possimus.', correct: true },
-            { text: 'Omnis voluptas assumenda est.', correct: false }
+            { text: 'AI that can act as personal assistants interacting with the web on behalf of users.', correct: true },
+            { text: 'Basic HTML pages with no style or interaction.', correct: false },
+            { text: 'Only user-to-user communication without any automation.', correct: false },
+            { text: 'No interoperability between different devices or platforms.', correct: false }
           ]
         },
         {
-          text: 'Web 4.0 Q4: These cases are perfectly simple and easy to distinguish?',
+          text: 'In Web 4.0, the interaction between humans and machines is expected to be:',
           image: placeholderImage,
           answers: [
-            { text: 'At vero eos et accusamus.', correct: false },
-            { text: 'Et iusto odio dignissimos.', correct: false },
-            { text: 'Ducimus qui blanditiis.', correct: false },
-            { text: 'Praesentium voluptatum deleniti.', correct: true }
+            { text: 'Direct and symbiotic, with intelligent interfaces.', correct: true },
+            { text: 'Limited to clicking links on static pages.', correct: false },
+            { text: 'Only through traditional social media websites.', correct: false },
+            { text: 'Non-existent, as Web 4.0 removes machine involvement.', correct: false }
           ]
         },
         {
-          text: 'Web 4.0 Q5: Nor again is there anyone who loves or pursues?',
+          text: 'Which statement about Web 4.0 is FALSE?',
           image: placeholderImage,
           answers: [
-            { text: 'Or desires to obtain pain.', correct: false },
-            { text: 'Of itself, because it is pain.', correct: false },
-            { text: 'But occasionally circumstances occur.', correct: true },
-            { text: 'Which toil and pain can procure.', correct: false }
+            { text: 'It is already fully realized and in widespread use today.', correct: true },
+            { text: 'It is a concept for the future evolution of the web.', correct: false },
+            { text: 'It involves AI and ubiquitous connectivity at a new level.', correct: false },
+            { text: 'It suggests seamless integration of online and offline worlds.', correct: false }
+          ]
+        },
+        {
+          text: 'Web 4.0 could include which of the following advancements?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Integration of Internet of Things (IoT) devices into the web ecosystem.', correct: true },
+            { text: 'Only static text-based interactions with no smart features.', correct: false },
+            { text: 'Removal of all user personalization and AI services.', correct: false },
+            { text: 'Elimination of connectivity in daily appliances.', correct: false }
+          ]
+        },
+        {
+          text: 'Web 4.0 is sometimes called the "Web OS". What does this imply?',
+          image: placeholderImage,
+          answers: [
+            { text: 'The web functions as a fully intelligent OS for all connected devices.', correct: true },
+            { text: 'It is just a minor upgrade to Web 3.0 with few changes.', correct: false },
+            { text: 'It focuses only on social networking applications.', correct: false },
+            { text: 'It relies solely on human input without automation.', correct: false }
+          ]
+        },
+        {
+          text: 'Which of these is NOT expected to be part of Web 4.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Entirely static content delivery with no intelligent processing.', correct: true },
+            { text: 'AI-driven services and agents.', correct: false },
+            { text: 'Voice and thought-controlled interfaces.', correct: false },
+            { text: 'Context-aware personalized recommendations.', correct: false }
+          ]
+        },
+        {
+          text: 'Web 4.0 envisions a web where:',
+          image: placeholderImage,
+          answers: [
+            { text: 'Machines and humans cooperate in a symbiotic relationship.', correct: true },
+            { text: 'Content is only created by central authorities.', correct: false },
+            { text: 'There is less connectivity than in previous eras.', correct: false },
+            { text: 'The web is used only for information and not services.', correct: false }
+          ]
+        },
+        {
+          text: 'Which era of the Web is associated with highly intelligent interactions and futuristic concepts?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Web 4.0', correct: true },
+            { text: 'Web 1.0', correct: false },
+            { text: 'Web 2.0', correct: false },
+            { text: 'Web 3.0', correct: false }
           ]
         }
       ]
     };
 
-    // State variables
-    let currentSet = [];
-    let currentIndex = 0;
-    let correctCount = 0;
-    let wrongCount = 0;
-    let unansweredCount = 0;
-    let currentCategory = '';
+    // Helper: shuffle an array in-place
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
 
-    // Show the specified section and hide others
+    // Navigation: show specified section (with login gating)
     function showSection(id) {
+      // If trying to access quiz sections without login, redirect to auth
+      if ((id === 'quizlist' || id === 'quiz') && !currentUser) {
+        alert('You must log in first to take a quiz.');
+        id = 'auth';
+        showLoginForm();
+      }
+      // If logged-in user tries to go to auth, redirect to home
+      if (id === 'auth' && currentUser) {
+        id = 'home';
+      }
+      // Switch active section
       const sections = document.querySelectorAll('main > section');
       sections.forEach(sec => sec.classList.remove('active'));
       const target = document.getElementById(id);
       if (target) target.classList.add('active');
+      // If showing auth section, ensure login form is visible by default
+      if (id === 'auth' && !currentUser) {
+        showLoginForm();
+      }
+      // If showing quiz selection, update score displays for current user
+      if (id === 'quizlist' && currentUser) {
+        document.querySelectorAll('.quiz-card').forEach(card => {
+          const catMatch = card.getAttribute('onclick').match(/'(web\d)'/);
+          if (!catMatch) return;
+          const category = catMatch[1];
+          const scoreParagraph = card.querySelector('p.score');
+          if (users[currentUser] && users[currentUser].scores && users[currentUser].scores[category] !== undefined) {
+            const lastScore = users[currentUser].scores[category];
+            if (scoreParagraph) {
+              scoreParagraph.textContent = 'Last Score: ' + lastScore + '/10';
+            } else {
+              const scoreP = document.createElement('p');
+              scoreP.className = 'score';
+              scoreP.textContent = 'Last Score: ' + lastScore + '/10';
+              card.appendChild(scoreP);
+            }
+          } else {
+            if (scoreParagraph) {
+              card.removeChild(scoreParagraph);
+            }
+          }
+        });
+      }
     }
 
-    // Start a quiz for a given category
+    // Quiz state variables
+    let currentCategory, currentSet;
+    let currentIndex, correctCount, wrongCount, unansweredCount;
+
+    // Start a quiz for a given category (must be logged in)
     function startQuiz(category) {
+      if (!currentUser) {
+        // Prevent starting quiz if not logged in
+        showSection('auth');
+        return;
+      }
       currentCategory = category;
-      currentSet = questionSets[category];
+      // Copy and shuffle question set
+      currentSet = questionSets[category].map(q => ({
+        text: q.text,
+        image: q.image,
+        answers: shuffleArray(q.answers.slice())
+      }));
+      shuffleArray(currentSet);
       currentIndex = 0;
       correctCount = 0;
       wrongCount = 0;
       unansweredCount = 0;
       // Update quiz title
       document.getElementById('quiz-title').textContent = category.toUpperCase() + ' Quiz';
-      // Reset scoreboard
+      // Reset scoreboard and show first question
       updateScoreboard();
-      // Show first question
       showQuestion(currentIndex);
       // Show quiz section
       showSection('quiz');
-      // Ensure question elements are visible
+      // Ensure question elements are visible (reset any hiding from last run)
       document.getElementById('question-image').style.display = '';
       document.getElementById('question-text').style.display = '';
       document.getElementById('answers').style.display = '';
@@ -589,7 +876,7 @@
       document.getElementById('question-text').textContent = 'Q' + (index + 1) + '. ' + question.text;
       const answersList = document.getElementById('answers');
       answersList.innerHTML = '';
-      question.answers.forEach((answer, i) => {
+      question.answers.forEach(answer => {
         const li = document.createElement('li');
         const btn = document.createElement('button');
         btn.textContent = answer.text;
@@ -599,48 +886,46 @@
         li.appendChild(btn);
         answersList.appendChild(li);
       });
-      // Hide result and overlay if visible
+      // Hide result (if it was showing) and reset answer states
       document.getElementById('result').style.display = 'none';
-      document.getElementById('overlay').style.display = 'none';
-      // Re-enable buttons
       const qButtons = answersList.querySelectorAll('button');
       qButtons.forEach(btn => {
         btn.disabled = false;
         btn.parentElement.classList.remove('correct-selected', 'wrong-selected');
       });
+      // Enable skip, disable next at the start of a question
+      document.getElementById('skip-button').disabled = false;
+      document.getElementById('next-button').disabled = true;
     }
 
     // Handle answer selection
     function handleAnswer(button, isCorrect) {
-      // Disable all answer buttons to avoid multiple clicks
-      const allButtons = document.querySelectorAll('#answers button');
-      allButtons.forEach(btn => btn.disabled = true);
-      // Highlight selected answer
+      // Disable all answer buttons after selection
+      document.querySelectorAll('#answers button').forEach(btn => btn.disabled = true);
+      // Highlight the selected answer
       const li = button.parentElement;
       if (isCorrect) {
         li.classList.add('correct-selected');
         correctCount++;
-        showOverlay('Correct!', 'Well done! That is the right answer.');
       } else {
         li.classList.add('wrong-selected');
         wrongCount++;
-        // Determine correct answer text for feedback
-        const correctAnswer = currentSet[currentIndex].answers.find(a => a.correct).text;
-        showOverlay('Wrong!', 'The correct answer was: ' + correctAnswer);
+        // Highlight the correct answer for reference
+        const correctText = currentSet[currentIndex].answers.find(a => a.correct).text;
+        document.querySelectorAll('#answers button').forEach(btn => {
+          if (btn.textContent === correctText) {
+            btn.parentElement.classList.add('correct-selected');
+          }
+        });
       }
       updateScoreboard();
+      // After answering, enable Next and disable Skip
+      document.getElementById('next-button').disabled = false;
+      document.getElementById('skip-button').disabled = true;
     }
 
-    // Display overlay with message
-    function showOverlay(title, message) {
-      document.getElementById('overlay-title').textContent = title;
-      document.getElementById('overlay-message').textContent = message;
-      document.getElementById('overlay').style.display = 'flex';
-    }
-
-    // Proceed to next question (called by overlay button)
+    // Go to the next question
     function nextQuestion() {
-      document.getElementById('overlay').style.display = 'none';
       currentIndex++;
       if (currentIndex >= currentSet.length) {
         showResults();
@@ -649,7 +934,7 @@
       }
     }
 
-    // Skip current question: count as unanswered and move on
+    // Skip current question (count as unanswered)
     function skipQuestion() {
       unansweredCount++;
       updateScoreboard();
@@ -661,7 +946,7 @@
       }
     }
 
-    // Reset the quiz (used by reset button)
+    // Reset the quiz (restart current quiz)
     function resetQuiz() {
       currentIndex = 0;
       correctCount = 0;
@@ -669,7 +954,7 @@
       unansweredCount = 0;
       updateScoreboard();
       showQuestion(currentIndex);
-      // Ensure controls and question elements visible
+      // Ensure quiz elements are visible
       document.getElementById('question-image').style.display = '';
       document.getElementById('question-text').style.display = '';
       document.getElementById('answers').style.display = '';
@@ -683,17 +968,110 @@
       document.getElementById('unanswered-count').textContent = unansweredCount;
     }
 
-    // Show final results at end of quiz
+    // Show final results and save score
     function showResults() {
       // Hide question elements
       document.getElementById('question-image').style.display = 'none';
       document.getElementById('question-text').style.display = 'none';
       document.getElementById('answers').style.display = 'none';
       document.getElementById('quiz-controls').style.display = 'none';
-      // Show result summary
+      // Display result summary
       const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = 'Quiz finished! You answered <span class="correct">' + correctCount + '</span> correctly, <span class="wrong">' + wrongCount + '</span> incorrectly and <span class="unanswered">' + unansweredCount + '</span> unanswered.';
+      resultDiv.innerHTML = 'Quiz finished! You answered <span class="correct">' + correctCount + '</span> correctly, <span class="wrong">' + wrongCount + '</span> incorrectly, and <span class="unanswered">' + unansweredCount + '</span> unanswered.';
       resultDiv.style.display = 'block';
+      // Save score for this user and quiz
+      if (currentUser) {
+        if (!users[currentUser].scores) {
+          users[currentUser].scores = {};
+        }
+        users[currentUser].scores[currentCategory] = correctCount;
+        localStorage.setItem('users', JSON.stringify(users));
+      }
+    }
+
+    // Show login form and hide register form
+    function showLoginForm() {
+      document.getElementById('login-form').style.display = 'block';
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('auth-title').textContent = 'Login';
+    }
+    // Show register form and hide login form
+    function showRegisterForm() {
+      document.getElementById('register-form').style.display = 'block';
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('auth-title').textContent = 'Register';
+    }
+
+    // Perform login action
+    function performLogin() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      if (!username || !password) {
+        alert('Please enter username and password.');
+        return;
+      }
+      if (!users[username]) {
+        alert('User not found. Please register first.');
+        return;
+      }
+      if (users[username].password !== password) {
+        alert('Incorrect password.');
+        return;
+      }
+      // Successful login
+      currentUser = username;
+      localStorage.setItem('currentUser', currentUser);
+      document.getElementById('username-display').textContent = currentUser;
+      document.getElementById('nav-auth').style.display = 'none';
+      document.getElementById('nav-user').style.display = 'block';
+      // Clear input fields
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-username').value = '';
+      // Go to quiz selection
+      showSection('quizlist');
+    }
+
+    // Perform registration action
+    function performRegister() {
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirm = document.getElementById('reg-confirm').value;
+      if (!username || !password || !confirm) {
+        alert('Please fill in all fields.');
+        return;
+      }
+      if (password !== confirm) {
+        alert('Passwords do not match.');
+        return;
+      }
+      if (users[username]) {
+        alert('Username already taken. Please choose another.');
+        return;
+      }
+      // Register new user
+      users[username] = { password: password, scores: {} };
+      localStorage.setItem('users', JSON.stringify(users));
+      currentUser = username;
+      localStorage.setItem('currentUser', currentUser);
+      document.getElementById('username-display').textContent = currentUser;
+      document.getElementById('nav-auth').style.display = 'none';
+      document.getElementById('nav-user').style.display = 'block';
+      // Clear registration fields
+      document.getElementById('reg-password').value = '';
+      document.getElementById('reg-confirm').value = '';
+      document.getElementById('reg-username').value = '';
+      // Go to quiz selection after registering
+      showSection('quizlist');
+    }
+
+    // Logout current user
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('currentUser');
+      document.getElementById('nav-user').style.display = 'none';
+      document.getElementById('nav-auth').style.display = 'block';
+      // Return to home page on logout
+      showSection('home');
     }
   </script>
 </body>
