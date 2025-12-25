@@ -7,9 +7,9 @@
   <style>
     /*
       Base styling inspired by the original layout: a dark header with
-      centered navigation links and light content area. Cards are used for
-      the quiz category selection. The quiz itself uses a scoreboard and
-      result display. All styles use basic HTML/CSS concepts.
+      centered navigation links and light content area.
+      Cards are used for the quiz category selection.
+      The quiz itself uses a scoreboard and result display. All styles use basic HTML/CSS concepts.
     */
     * {
       box-sizing: border-box;
@@ -92,6 +92,13 @@
     }
     .quiz-card:hover {
       background: #eaeaea;
+    }
+    /* Updated class for score display to match existing styles */
+    .score-display {
+      font-size: 0.9em;
+      color: #555;
+      margin-top: 0.5em;
+      font-weight: bold;
     }
     .quiz-card p.score {
       font-size: 0.9em;
@@ -261,36 +268,37 @@
   </header>
 
   <main>
-    <!-- Home Section -->
     <section id="home" class="active">
       <h1>Welcome to the Web Evolution Quiz</h1>
       <p>Test your knowledge of the evolution of the web. Choose a quiz category below to get started!</p>
     </section>
 
-    <!-- Quiz Selection Section -->
     <section id="quizlist">
       <h2>Select a Quiz Category</h2>
       <div class="categories">
         <div class="quiz-card" onclick="startQuiz('web1')">
           <h3>Web 1.0</h3>
           <p>The early static web</p>
+          <p id="score-web1" class="score-display"></p>
         </div>
         <div class="quiz-card" onclick="startQuiz('web2')">
           <h3>Web 2.0</h3>
           <p>The social web</p>
+          <p id="score-web2" class="score-display"></p>
         </div>
         <div class="quiz-card" onclick="startQuiz('web3')">
           <h3>Web 3.0</h3>
           <p>The semantic/intelligent web</p>
+          <p id="score-web3" class="score-display"></p>
         </div>
         <div class="quiz-card" onclick="startQuiz('web4')">
           <h3>Web 4.0</h3>
           <p>The futuristic web</p>
+          <p id="score-web4" class="score-display"></p>
         </div>
       </div>
     </section>
 
-    <!-- Quiz Section (dynamic) -->
     <section id="quiz">
       <h2 id="quiz-title"></h2>
       <div id="quiz-container">
@@ -298,7 +306,7 @@
         <div id="question-text" class="question-text"></div>
         <ul id="answers"></ul>
         <div id="scoreboard">
-          Correct: <span id="correct-count">0</span> | 
+          Correct: <span id="correct-count">0</span> |
           Wrong: <span id="wrong-count">0</span> | 
           Unanswered: <span id="unanswered-count">0</span>
         </div>
@@ -311,14 +319,12 @@
       </div>
     </section>
 
-    <!-- About Section -->
     <section id="about">
       <h2>About Us</h2>
       <p>This quiz application is a project for an introductory web development course. It demonstrates basic HTML structure, CSS styling, and JavaScript for interactivity. All content and logic are contained in one HTML file. No external libraries were used, only the concepts taught in the course are applied here.</p>
       <p>Created by: [Your Name]</p>
     </section>
 
-    <!-- Login/Register Section -->
     <section id="auth">
       <div class="auth-container">
         <h2 id="auth-title">Login</h2>
@@ -349,6 +355,59 @@
     let users = JSON.parse(localStorage.getItem('users')) || {};
     let currentUser = localStorage.getItem('currentUser') || null;
 
+    // --- MODIFICATION: Upgrade old score format and define helper function (from docx) ---
+    // **NEW**: Upgrade old score format in localStorage (number -> {last, best})
+    let usersRaw = localStorage.getItem('users');
+    if (usersRaw) {
+      let usersParsed = JSON.parse(usersRaw);
+      for (let uname in usersParsed) {
+        if (usersParsed[uname].scores) {
+          for (let quiz in usersParsed[uname].scores) {
+            if (typeof usersParsed[uname].scores[quiz] === 'number') {
+              // convert numeric score to object with last and best
+              let oldScore = usersParsed[uname].scores[quiz];
+              usersParsed[uname].scores[quiz] = { last: oldScore, best: oldScore };
+            }
+          }
+        }
+      }
+      localStorage.setItem('users', JSON.stringify(usersParsed));
+      // Reload users to ensure we have the upgraded version in memory
+      users = usersParsed;
+    }
+
+    // **NEW**: Function to display Last/Best scores on quiz selection page
+    function updateQuizListScores() {
+      let usersData = JSON.parse(localStorage.getItem('users')) || {};
+      let username = localStorage.getItem('currentUser');
+      // assumes current username is stored
+      const categories = Object.keys(questionSets); 
+      
+      categories.forEach(cat => {
+        const scorePara = document.getElementById(`score-${cat}`);
+        if (!scorePara) return;
+        // Default text if no scores yet
+        let lastText = 'N/A';
+        let bestText = 'N/A';
+        
+        if (username && usersData[username] && usersData[username].scores && usersData[username].scores[cat] !== undefined) {
+          const scoreData = usersData[username].scores[cat];
+          const totalQuestions = questionSets[cat].length;
+          
+          if (typeof scoreData === 'object') {
+            lastText = `${scoreData.last}/${totalQuestions}`;
+            bestText = `${scoreData.best}/${totalQuestions}`;
+          } else if (typeof scoreData === 'number') {
+            // (shouldn’t happen after upgrade, but just in case)
+            lastText = `${scoreData}/${totalQuestions}`;
+            bestText = `${scoreData}/${totalQuestions}`;
+          }
+        }
+        scorePara.textContent = `Last: ${lastText}, Best: ${bestText}`;
+      });
+    }
+    // -----------------------------------------------------------------------------------
+
     // Update nav based on login status
     if (currentUser) {
       document.getElementById('username-display').textContent = currentUser;
@@ -358,7 +417,6 @@
 
     // Placeholder image (1x1 pixel transparent GIF)
     const placeholderImage = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-
     // Question sets for each category (10 questions each)
     const questionSets = {
       web1: [
@@ -770,7 +828,6 @@
         }
       ]
     };
-
     // Helper: shuffle an array in-place
     function shuffleArray(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -797,33 +854,15 @@
       sections.forEach(sec => sec.classList.remove('active'));
       const target = document.getElementById(id);
       if (target) target.classList.add('active');
+      
       // If showing auth section, ensure login form is visible by default
       if (id === 'auth' && !currentUser) {
         showLoginForm();
       }
-      // If showing quiz selection, update score displays for current user
-      if (id === 'quizlist' && currentUser) {
-        document.querySelectorAll('.quiz-card').forEach(card => {
-          const catMatch = card.getAttribute('onclick').match(/'(web\d)'/);
-          if (!catMatch) return;
-          const category = catMatch[1];
-          const scoreParagraph = card.querySelector('p.score');
-          if (users[currentUser] && users[currentUser].scores && users[currentUser].scores[category] !== undefined) {
-            const lastScore = users[currentUser].scores[category];
-            if (scoreParagraph) {
-              scoreParagraph.textContent = 'Last Score: ' + lastScore + '/10';
-            } else {
-              const scoreP = document.createElement('p');
-              scoreP.className = 'score';
-              scoreP.textContent = 'Last Score: ' + lastScore + '/10';
-              card.appendChild(scoreP);
-            }
-          } else {
-            if (scoreParagraph) {
-              card.removeChild(scoreParagraph);
-            }
-          }
-        });
+      
+      // --- MODIFICATION: If showing quiz selection, use new update function ---
+      if (id === 'quizlist') {
+        updateQuizListScores();
       }
     }
 
@@ -979,12 +1018,31 @@
       const resultDiv = document.getElementById('result');
       resultDiv.innerHTML = 'Quiz finished! You answered <span class="correct">' + correctCount + '</span> correctly, <span class="wrong">' + wrongCount + '</span> incorrectly, and <span class="unanswered">' + unansweredCount + '</span> unanswered.';
       resultDiv.style.display = 'block';
-      // Save score for this user and quiz
-      if (currentUser) {
-        if (!users[currentUser].scores) {
-          users[currentUser].scores = {};
+      
+      // --- MODIFICATION: Persist last and best scores for the current user and category (from docx) ---
+      let users = JSON.parse(localStorage.getItem('users')) || {};
+      let username = localStorage.getItem('currentUser');
+      if (username && users[username]) {
+        if (!users[username].scores) users[username].scores = {};
+        // Ensure old format is handled (number -> object)
+        let prevScore = users[username].scores[currentCategory];
+        if (typeof prevScore === 'number') {
+          prevScore = { last: prevScore, best: prevScore };
         }
-        users[currentUser].scores[currentCategory] = correctCount;
+        // Determine new last and best
+        const currentScore = correctCount;
+        if (!prevScore || typeof prevScore !== 'object') {
+          // No prior score for this quiz
+          users[username].scores[currentCategory] = { last: currentScore, best: currentScore };
+        } else {
+          // Update last score
+          prevScore.last = currentScore;
+          // Update best score if current is higher
+          if (currentScore > prevScore.best) {
+            prevScore.best = currentScore;
+          }
+          users[username].scores[currentCategory] = prevScore;
+        }
         localStorage.setItem('users', JSON.stringify(users));
       }
     }
