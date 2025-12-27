@@ -1,0 +1,2476 @@
+<!-- DOCTYPE html-->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Web Evolution Quiz</title>
+<link href="https://cdnjs.cloudflare. com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+    /*
+      Base styling inspired by the original layout:  a dark header with
+      centered navigation links and light content area.  
+      Cards are used for the quiz category selection.  
+      The quiz itself uses a scoreboard and result display.  All styles use basic HTML/CSS concepts.
+    */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background:  #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #333;
+      color: #fff;
+      padding: 1em 0;
+      position: relative;
+    }
+    /* Hamburger menu styles */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+      padding: 0.5em;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      position: absolute;
+      right: 1em;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .hamburger span {
+      width: 25px;
+      height: 3px;
+      background: #fff;
+      margin:  5px 0;
+      transition: 0.3s;
+    }
+    . hamburger.active span:nth-child(1) {
+      transform: rotate(45deg) translate(10px, 10px);
+    }
+    .hamburger.active span:nth-child(2) {
+      opacity: 0;
+    }
+    .hamburger.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(7px, -7px);
+    }
+    nav {
+      transition: max-height 0.3s ease-out;
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin:  0;
+      flex-wrap: wrap;
+    }
+    nav li {
+      margin: 0 1em;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    /* Dark mode toggle button in nav */
+    #dark-mode-toggle {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 0;
+      font-size: 1rem;
+    }
+    #dark-mode-toggle:hover { text-decoration: underline; }
+    
+    /* Mobile hamburger menu styles */
+    @media (max-width: 768px) {
+      .hamburger {
+        display: flex;
+      }
+      nav ul {
+        flex-direction: column;
+        max-height: 0;
+        overflow: hidden;
+        background: #222;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        border-top: 1px solid #444;
+        transition: max-height 0.3s ease-out;
+      }
+      nav ul.active {
+        max-height: 500px;
+      }
+      nav li {
+        margin: 0;
+        padding: 1em;
+        border-bottom: 1px solid #444;
+        text-align: center;
+        width: 100%;
+      }
+      nav li:last-child {
+        border-bottom: none;
+      }
+      header {
+        padding: 0.5em 1em;
+      }
+    }
+
+    main {
+      flex: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2em;
+      width: 100%;
+    }
+    section {
+      display: none;
+      padding: 1em 0;
+    }
+    section.active {
+      display: block;
+    }
+
+    /* Quiz layout tweak (no question images) */
+    #quiz {
+      padding-top: 0.25em;
+    }
+    #quiz h2 {
+      margin-top: 0;
+      margin-bottom: 0.75em;
+      text-align: center;
+    }
+    /* Home section styling */
+    #home {
+      text-align: center;
+    }
+    #home h1 {
+      font-size: 2em;
+      margin-bottom: 0.5em;
+    }
+    #home p {
+      font-size: 1.1em;
+      margin-bottom: 1.5em;
+    }
+
+    /* START QUIZ button (Home) */
+    .start-quiz-btn {
+      font-size: 24px;
+      font-weight: bold;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 1em 2em;
+      cursor:  pointer;
+      transition: opacity 0.2s ease;
+      display: inline-block;
+      max-width: 100%;
+      line-height: 1.1;
+    }
+    .start-quiz-btn:hover { opacity: 0.9; }
+    . start-quiz-btn:active { opacity: 0.85; }
+
+    @media (max-width: 480px) {
+      .start-quiz-btn {
+        width: 100%;
+        font-size: 22px;
+        padding: 0.95em 1.2em;
+      }
+    }
+
+    /* Category cards container - REDESIGNED */
+    #quizlist .categories {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      margin-top:  2em;
+      padding: 1em;
+      justify-items: center;
+    }
+
+    /* Base quiz card styling - REDESIGNED */
+    .quiz-card {
+      width: 280px;
+      height: 200px;
+      padding: 1.5rem;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      text-align: center;
+      border: none;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    . quiz-card:hover {
+      transform: scale(1.03);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .quiz-card h3 {
+      margin:  0;
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+      z-index: 2;
+      position: relative;
+    }
+
+    .quiz-card p {
+      margin: 0.5em 0 0 0;
+      color: #fff;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+      font-size: 0.95em;
+      z-index:  2;
+      position: relative;
+    }
+
+    .quiz-card .score-display {
+      margin-top: auto;
+      color: #fff;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+      font-size: 0.85em;
+      font-weight: bold;
+      z-index: 2;
+      position: relative;
+    }
+
+   /* FIX 1: selector must be "#quizlist .categories" (no space) */
+#quizlist .categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  margin-top: 2em;
+  padding: 1em;
+  justify-items: center;
+}
+
+/* FIX 2: remove spaces in class chaining: ".quiz-card.art-piece-1" etc */
+.quiz-card.art-piece-1 {
+  background-image:
+    linear-gradient(135deg, rgba(79, 172, 254, 0.3) 0%, rgba(0, 242, 254, 0.3) 100%),
+    url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjtcy2VNtYKIbsDox6S_mQLXmEsobNzrRRFSR_P8Cy8KDG3YPujN7g-Ytbp4uQ8xO11MD2sWWOXtpjMZdnvXAKXLIroSbF64FmTRVB9Sj8_mOeoOW3T1SLGPqdVN_6TMLH_O_aC6MOnrTVxrCbVLdrXGMgnuaQltnaONDgEA5ucF9hAmpyb82kNUzCeB94/s2816/Gemini_Generated_Image_5o5syk5o5syk5o5s.png');
+}
+
+.quiz-card.art-piece-2 {
+  background-image:
+    linear-gradient(135deg, rgba(250, 112, 154, 0.3) 0%, rgba(254, 225, 64, 0.3) 100%),
+    url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjxnSZ9KbR0rJFgD_S0izoQlSMGltuMjW7UId5M9ccMqMCS8syWe4wSuXOyR-geHdiC2Z2FjAEmQ1VM-mIDNwYbyh23HRb0YlkfrdtXqZT153CORU9gdNo6B5Sr4Wav4hwQDXG3YBGnj2eFvOjApY2ZZOukfZXpte6jxCl_M_Zg5OLQvXCRu-TrM5jzt9E/w740-h405/Gemini_Generated_Image_5o5syk5o5syk5o5s%20(1).png');
+}
+
+.quiz-card.art-piece-3 {
+  background-image:
+    linear-gradient(135deg, rgba(46, 204, 113, 0.3) 0%, rgba(52, 152, 219, 0.3) 100%),
+    url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj8JcpIjklyr4uyD1ylCE0zXZl9LVuCdkYPxq3YKIcXIpAjSOci4iAweeaRsUJmt2l28wLa6aQrJMzy9KKtdZ6418pbx7kL5udFA_NDcz_82A13DSuU7aCEAujexwSpHgblp5jz3FCmlpb6ovSn6gfSv_Ex4D7Uxi2aOPQFRJn3eSeoWHEyPCcUkmXAJ_E/w657-h359/Gemini_Generated_Image_5o5syk5o5syk5o5s%20(2).png');
+}
+
+/* FIX 3: remove the space in the URL for art-piece-4 (". png" -> ".png") */
+.quiz-card.art-piece-4 {
+  background-image:
+    linear-gradient(135deg, rgba(155, 89, 182, 0.3) 0%, rgba(241, 196, 15, 0.3) 100%),
+    url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgXur5beAxzsaDJWCmenJZ0cQhsJac4-0xkIBxiKBAL9Q012cC5NL2NduYMmmSNOagsfyMexbhXdU7aTtynJcuI401Dqyi3hmRhmbh681Una1U_R8Hut8xxAReK2GMJURvymAzvdgE9cxy02EG_Z8v1qw1cFID8A0eX7zbtJ10jkBuV7ZheBFO8qkx6YCI/s2816/Gemini_Generated_Image_5o5syk5o5syk5o5s%20(3).png');
+}
+
+/* FIX 4: hover selector must be ".quiz-card:hover" (no space) */
+.quiz-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      #quizlist .categories {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        padding: 0. 5em;
+      }
+      
+      .quiz-card {
+        width: 100%;
+        height: 180px;
+        padding: 1.2rem;
+      }
+      
+      .quiz-card h3 {
+        font-size: 1.3em;
+      }
+      
+      .quiz-card p {
+        font-size: 0.9em;
+      }
+    }
+
+    @media (max-width: 600px) {
+      #quizlist .categories {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 0.5em;
+      }
+      
+      .quiz-card {
+        width: 100%;
+        height: 160px;
+        padding: 1rem;
+      }
+      
+      .quiz-card:hover {
+        transform: scale(1.01);
+      }
+      
+      .quiz-card h3 {
+        font-size: 1.2em;
+      }
+      
+      .quiz-card p {
+        font-size: 0.85em;
+      }
+    }
+
+    /* Quiz container */
+    #quiz-container {
+      background: #fff;
+      border:  1px solid #ccc;
+      border-radius:  8px;
+      padding: 1.5em;
+      max-width: 600px;
+      margin: 0 auto;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+    #quiz-container .question-text {
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.35;
+      margin: 0.25em 0 0.9em;
+    }
+    #answers {
+      list-style: none;
+      padding: 0;
+      margin:  0;
+    }
+    #answers li {
+      margin-bottom: 0.5em;
+    }
+    #answers button {
+      width: 100%;
+      padding:  0.75em;
+      border: 1px solid #888;
+      border-radius: 4px;
+      background-color: #eee;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 1.05rem;
+    }
+    #answers button:hover {
+      background-color: #e0e0e0;
+    }
+    #answers . correct-selected {
+      background-color: #1e7e34;
+      color: #fff;
+    }
+    #answers .wrong-selected {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    #scoreboard {
+      margin-top:  1em;
+      padding:  0.5em;
+      background: #f7f7f7;
+      border:  1px solid #ddd;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    #quiz-controls {
+      margin-top: 0.5em;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5em;
+    }
+    #quiz-controls button {
+      flex: 1;
+      padding:  0.6em;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    #reset-button { background-color: #dc3545; }
+    #skip-button { background-color: #6c757d; }
+    
+    #quiz-controls button:hover {
+      opacity: 0.9;
+    }
+    #result {
+      margin-top: 1em;
+      font-size: 1rem;
+      text-align: center;
+      display: none;
+    }
+    #result span. correct {
+      color: #1e7e34;
+      font-weight: bold;
+    }
+    #result span.wrong {
+      color: #dc3545;
+      font-weight:  bold;
+    }
+    #result span.unanswered {
+      color:  #6c757d;
+      font-weight: bold;
+    }
+    /* Auth (Login/Register) form styling */
+    .auth-container {
+      background: #fff;
+      border:  1px solid #ccc;
+      border-radius: 6px;
+      width: 300px;
+      max-width: 100%;
+      margin: 1em auto;
+      padding: 1em;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .auth-container h2 {
+      margin-bottom: 0.5em;
+    }
+    .auth-container input {
+      width: 100%;
+      padding: 0.5em;
+      margin:  0.5em 0;
+      border: 1px solid #888;
+      border-radius: 4px;
+      font-size: 1em;
+    }
+    .auth-container button {
+      width:  100%;
+      padding: 0.6em;
+      margin: 0.5em 0;
+      border: none;
+      border-radius: 4px;
+      background:  #007bff;
+      color: #fff;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    .auth-container button:hover {
+      opacity: 0.9;
+    }
+    .auth-container a {
+      color: #007bff;
+      text-decoration:  none;
+    }
+    . auth-container a:hover {
+      text-decoration: underline;
+    }
+    /* About section styling */
+    #about {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* Footer styles */
+    footer {
+      background:  #333;
+      color: #fff;
+      padding: 2em 1em;
+      text-align:  center;
+      margin-top: 2em;
+    }
+    footer h3 {
+      margin-bottom: 1em;
+      font-size: 1.1rem;
+    }
+    . app-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5em;
+      margin-bottom: 1em;
+    }
+    .app-links a {
+      color: #fff;
+      text-decoration: none;
+      padding: 0.75em 1.5em;
+      background: #007bff;
+      border-radius: 5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5em;
+      transition: background 0.3s;
+    }
+    .app-links a:hover {
+      background: #0056b3;
+    }
+    .app-links a i {
+      font-size: 1.2rem;
+    }
+    footer p {
+      margin-top: 1em;
+      font-size: 0.9em;
+      color: #bbb;
+    }
+
+    @media (max-width: 480px) {
+      .app-links {
+        flex-direction: column;
+        gap: 0.75em;
+      }
+      . app-links a {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* Dark mode styles */
+    body.dark-mode {
+      background: #0f1113;
+      color: #e6eef6;
+    }
+    body.dark-mode header { background: #0b0d0f; color: #e6eef6; }
+    body.dark-mode nav a { color: #e6eef6; }
+    body.dark-mode #dark-mode-toggle { color: #e6eef6; }
+    body.dark-mode nav ul { background: #0b0d0f; border-top-color: #2a2f33; }
+    body.dark-mode nav li { border-bottom-color: #2a2f33; }
+    body.dark-mode . quiz-card { background-color: transparent; border: none; color: #e6eef6; }
+    body.dark-mode .quiz-card:hover { background-color: transparent; box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
+    body.dark-mode #quiz-container { background: #0f1315; border: 1px solid #23282b; box-shadow: 0 2px 8px rgba(0,0,0,0.6); color: #e6eef6; }
+    body.dark-mode #answers button { background-color: #15181a; border:  1px solid #2b3134; color: #e6eef6; }
+    body.dark-mode #answers button:hover { background-color: #1c2023; }
+    body.dark-mode #answers .correct-selected { background-color: #1e7e34; color: #fff; }
+    body.dark-mode #answers .wrong-selected { background-color: #c0392b; color: #fff; }
+    body.dark-mode #scoreboard { background: #0d1112; border: 1px solid #262a2c; color: #cfe6ff; }
+    body.dark-mode . auth-container { background: #0f1315; border: 1px solid #22262a; color: #e6eef6; }
+    body.dark-mode #result { color: #e6eef6; }
+    body.dark-mode footer { background: #0b0d0f; }
+  
+
+/* ===== Learn More (scoped from external) ===== */
+
+        #learn-more {
+            --color-bg-primary: #f8f9fa;
+            --color-bg-secondary: #ffffff;
+            --color-primary: #2196F3;
+            --color-primary-dark: #1976D2;
+            --color-accent: #FF6B6B;
+            --color-accent-light: #FFE5E5;
+            --color-success: #4CAF50;
+            --color-warning: #FFC107;
+            --color-text-primary: #212121;
+            --color-text-secondary: #666666;
+            --color-border: #e0e0e0;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        #learn-more * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        #learn-more .lm-page {
+            scroll-behavior: smooth;
+        }
+
+        #learn-more .lm-page {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+        }
+
+        #learn-more .header {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+        }
+
+        #learn-more .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        #learn-more .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        #learn-more .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        #learn-more .intro-section {
+            background: white;
+            padding: 40px 30px;
+            margin: 30px auto;
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+            line-height: 1.8;
+            max-width: 900px;
+        }
+
+        #learn-more .intro-section h2 {
+            color: var(--color-primary);
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        #learn-more .intro-section p {
+            color: var(--color-text-secondary);
+            margin-bottom: 15px;
+            font-size: 1.05em;
+        }
+
+        #learn-more .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 30px auto;
+            max-width: 900px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #learn-more .tab-btn {
+            padding: 12px 24px;
+            border: 2px solid var(--color-border);
+            background: white;
+            color: var(--color-text-primary);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        #learn-more .tab-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        #learn-more .tab-btn.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        #learn-more .tab-content {
+            display: none;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        #learn-more .tab-content.active {
+            display: block;
+        }
+
+        #learn-more .web-version {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            border-left: 5px solid var(--color-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        #learn-more .web-version.web10 {
+            border-left-color: #FF9800;
+        }
+
+        #learn-more .web-version.web20 {
+            border-left-color: #4CAF50;
+        }
+
+        #learn-more .web-version.web30 {
+            border-left-color: #2196F3;
+        }
+
+        #learn-more .web-version.web40 {
+            border-left-color: #9C27B0;
+        }
+
+        #learn-more .web-version h3 {
+            font-size: 1.6em;
+            margin-bottom: 15px;
+            color: var(--color-text-primary);
+        }
+
+        #learn-more .web-version p {
+            color: var(--color-text-secondary);
+            margin-bottom: 15px;
+        }
+
+        #learn-more .features-list {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        #learn-more .features-list li {
+            padding: 10px 0 10px 30px;
+            position: relative;
+            color: var(--color-text-secondary);
+        }
+
+        #learn-more .features-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--color-success);
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        #learn-more .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        #learn-more .timeline-item {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        #learn-more .timeline-year {
+            min-width: 80px;
+            font-weight: 700;
+            color: var(--color-primary);
+            font-size: 1.1em;
+        }
+
+        #learn-more .timeline-content {
+            color: var(--color-text-secondary);
+        }
+
+        #learn-more .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        #learn-more .video-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        #learn-more .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        #learn-more .video-placeholder {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3em;
+            position: relative;
+        }
+
+        #learn-more .video-card.web10 .video-placeholder {
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+        }
+
+        #learn-more .video-card.web20 .video-placeholder {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+        }
+
+        #learn-more .video-card.web30 .video-placeholder {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        }
+
+        #learn-more .video-card.web40 .video-placeholder {
+            background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+        }
+
+        #learn-more .play-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        #learn-more .video-info {
+            padding: 20px;
+        }
+
+        #learn-more .video-title {
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        #learn-more .video-description {
+            color: var(--color-text-secondary);
+            font-size: 0.95em;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        #learn-more .video-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 0.85em;
+            color: #999;
+        }
+
+        #learn-more .meta-tag {
+            background: var(--color-accent-light);
+            padding: 4px 8px;
+            border-radius: 3px;
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        #learn-more .learn-more-btn {
+            display: inline-block;
+            background: var(--color-primary);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        #learn-more .learn-more-btn:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        #learn-more .comparison-table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            margin: 30px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .comparison-table th,
+        #learn-more .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        #learn-more .comparison-table th {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            font-weight: 700;
+        }
+
+        #learn-more .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        #learn-more .comparison-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        #learn-more .footer {
+            background: #333;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        #learn-more .footer p {
+            margin: 5px 0;
+        }
+
+        @media (max-width: 768px) {
+            #learn-more .header h1 {
+                font-size: 2em;
+            }
+
+            #learn-more .header p {
+                font-size: 1em;
+            }
+
+            #learn-more .nav-tabs {
+                gap: 5px;
+            }
+
+            #learn-more .tab-btn {
+                padding: 10px 16px;
+                font-size: 0.9em;
+            }
+
+            #learn-more .video-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .comparison-table th,
+            #learn-more .comparison-table td {
+                padding: 10px;
+                font-size: 0.9em;
+            }
+        }
+    
+
+/* --- Learn More integration: dark mode + modal --- */
+#learn-more { padding: 0; }
+#learn-more .lm-page { background: var(--color-bg-primary); color: var(--color-text-primary); }
+body.dark-mode #learn-more {
+  --color-bg-primary: #0f1113;
+  --color-bg-secondary: #15181a;
+  --color-bg-white: #0f1315;
+  --color-text-primary: #e6eef6;
+  --color-text-secondary: #b8c4d0;
+  --color-shadow: rgba(0,0,0,0.55);
+  --color-shadow-light: rgba(0,0,0,0.35);
+  --color-border: #2a2f33;
+}
+body.dark-mode #learn-more .web-version,
+body.dark-mode #learn-more .intro-section,
+body.dark-mode #learn-more .video-card,
+body.dark-mode #learn-more .comparison-table {
+  background: var(--color-bg-white);
+  box-shadow: 0 2px 10px var(--color-shadow);
+}
+body.dark-mode #learn-more .comparison-table tr:hover { background: rgba(255,255,255,0.04); }
+body.dark-mode #learn-more .tab-btn { background: var(--color-bg-white); color: var(--color-text-primary); border-color: var(--color-border); }
+body.dark-mode #learn-more .tab-btn.active { color: #fff; }
+body.dark-mode #learn-more .intro-section p,
+body.dark-mode #learn-more .web-version p,
+body.dark-mode #learn-more .features-list li,
+body.dark-mode #learn-more .timeline-content,
+body.dark-mode #learn-more .video-description { color: var(--color-text-secondary); }
+body.dark-mode #learn-more .video-title,
+body.dark-mode #learn-more .web-version h3,
+body.dark-mode #learn-more .intro-section h2 { color: var(--color-text-primary); }
+
+/* modal */
+#learn-more .lm-modal { position: fixed; inset: 0; display: none; z-index: 9999; }
+#learn-more .lm-modal.is-open { display: block; }
+#learn-more .lm-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.65); }
+#learn-more .lm-modal-dialog {
+  position: relative;
+  width: min(960px, calc(100vw - 32px));
+  margin: 6vh auto;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+#learn-more .lm-modal-close {
+  position: absolute;
+  top: 8px; right: 10px;
+  width: 40px; height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 28px;
+  line-height: 40px;
+  cursor: pointer;
+  z-index: 2;
+}
+#learn-more .lm-modal-close:hover { background: rgba(255,255,255,0.25); }
+#learn-more .lm-modal-framewrap { position: relative; width: 100%; aspect-ratio: 16 / 9; }
+#learn-more #lm-video-iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<header>
+<button class="hamburger" id="hamburger-menu">
+<span></span>
+<span></span>
+<span></span>
+</button>
+<nav>
+<ul id="nav-menu">
+<li><a href="#" onclick="showSection('home')">Home</a></li>
+<li><a href="#" onclick="showSection('quizlist')">Take the Quiz</a></li><li><a href="#" onclick="showSection('learn-more')">Learn More</a></li>
+<li><a href="#" onclick="showSection('about')">About Us</a></li>
+<li><button id="dark-mode-toggle" onclick="toggleDarkMode()">🌙 Dark Mode</button></li>
+<li id="nav-auth"><a href="#" onclick="showSection('auth')">Login/Register</a></li>
+<li id="nav-user" style="display: none;">Welcome, <span id="username-display"></span>!  (<a href="#" onclick="logout()">Logout</a>)</li>
+</ul>
+</nav>
+</header>
+<main>
+<section class="active" id="home">
+<h1>Welcome to the Web Evolution Quiz</h1>
+<p>Test your knowledge of the evolution of the web.  Choose a quiz category below to get started! </p>
+<button class="start-quiz-btn" onclick="showSection('quizlist')">START QUIZ</button>
+</section>
+<section id="quizlist">
+<h2>Select a Quiz Category</h2>
+<div class="categories">
+<div class="quiz-card art-piece-1" onclick="startQuiz('web1')">
+<h3>Web 1.0</h3>
+<p>The early static web</p>
+<p class="score-display" id="score-web1"></p>
+</div>
+<div class="quiz-card art-piece-2" onclick="startQuiz('web2')">
+<h3>Web 2.0</h3>
+<p>The social web</p>
+<p class="score-display" id="score-web2"></p>
+</div>
+<div class="quiz-card art-piece-3" onclick="startQuiz('web3')">
+<h3>Web 3.0</h3>
+<p>The semantic/intelligent web</p>
+<p class="score-display" id="score-web3"></p>
+</div>
+<div class="quiz-card art-piece-4" onclick="startQuiz('web4')">
+<h3>Web 4.0</h3>
+<p>The futuristic web</p>
+<p class="score-display" id="score-web4"></p>
+</div>
+</div>
+</section>
+<section id="quiz">
+<h2 id="quiz-title"></h2>
+<div id="quiz-container">
+<div class="question-text" id="question-text"></div>
+<ul id="answers"></ul>
+<div id="scoreboard">
+          Correct: <span id="correct-count">0</span> |
+          Wrong: <span id="wrong-count">0</span> | 
+          Unanswered: <span id="unanswered-count">0</span>
+</div>
+<div id="quiz-controls">
+<button id="reset-button" onclick="resetQuiz()">Reset</button>
+<button id="skip-button" onclick="skipQuestion()">Skip</button>
+</div>
+<div id="result"></div>
+</div>
+</section>
+<section id="learn-more"><div class="lm-page">
+<div class="header">
+<h1>🌐 The Evolution of the Web</h1>
+<p>From Static Pages (1990s) to Decentralized Intelligence (2024) - A Complete Journey Through Web 1.0, 2.0, 3.0, and 4.0</p>
+</div>
+<div class="container">
+<div class="intro-section">
+<h2>Understanding Web Evolution</h2>
+<p>The World Wide Web has transformed dramatically since Tim Berners-Lee invented it in 1989 at CERN. What began as a simple way for researchers to share documents has evolved into a complex ecosystem of technologies, platforms, and paradigms that fundamentally reshape how we communicate, work, and interact.</p>
+<p>Each generation of the web—Web 1.0, Web 2.0, Web 3.0, and the emerging Web 4.0—represents a distinct era with unique characteristics. Understanding these phases helps us recognize where we are today and where the internet is heading tomorrow. This journey reflects not just technological advancement, but also philosophical shifts about data ownership, privacy, intelligence, and human-internet interaction.</p>
+<p><strong>Ready to explore?</strong> Click the tabs below to dive into each era and watch curated educational videos that explain each version in detail.</p>
+</div>
+<div class="nav-tabs">
+<button class="tab-btn active" onclick="lmSwitchTab(event, 'web10')">Web 1.0<br/><small>1990-2004</small></button>
+<button class="tab-btn" onclick="lmSwitchTab(event, 'web20')">Web 2.0<br/><small>2004-2015</small></button>
+<button class="tab-btn" onclick="lmSwitchTab(event, 'web30')">Web 3.0<br/><small>2015-Present</small></button>
+<button class="tab-btn" onclick="lmSwitchTab(event, 'web40')">Web 4.0<br/><small>Emerging</small></button>
+</div>
+<!-- Web 1.0 Tab -->
+<div class="tab-content active" id="web10">
+<div class="web-version web10">
+<h3>📖 Web 1.0: The Static Web (1990-2004)</h3>
+<p><strong>Tagline:</strong> "Read-Only Internet" - The Information Superhighway</p>
+<p>Web 1.0 was the beginning of the world wide web era. It introduced hypertext documents that could be linked together via URLs, creating an interconnected web of information. Websites were mostly static HTML pages with limited interactivity. Users were passive consumers—they could read content but couldn't easily contribute or interact with it.</p>
+<h4 style="margin-top: 20px; color: #FF9800;">Key Characteristics:</h4>
+<ul class="features-list">
+<li><strong>Static Pages:</strong> Information was presented as read-only documents without dynamic content</li>
+<li><strong>Limited Interactivity:</strong> Basic HTML forms, minimal user engagement</li>
+<li><strong>Centralized Control:</strong> Content creators were businesses and institutions; users were consumers</li>
+<li><strong>Slow Connections:</strong> Dial-up modems and early broadband limited speed and multimedia</li>
+<li><strong>Text-Heavy:</strong> Graphics and multimedia were rare due to bandwidth limitations</li>
+<li><strong>No User-Generated Content:</strong> Users couldn't contribute; they could only browse</li>
+</ul>
+<h4 style="margin-top: 20px; color: #FF9800;">Timeline Milestones:</h4>
+<div class="timeline">
+<div class="timeline-item">
+<div class="timeline-year">1989</div>
+<div class="timeline-content">Tim Berners-Lee proposes the World Wide Web at CERN</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">1991</div>
+<div class="timeline-content">First website launched (info.cern.ch); First web page explains what the web is</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">1993</div>
+<div class="timeline-content">Mosaic browser introduced by Marc Andreessen—first graphical browser making web accessible to non-technical users</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">1994</div>
+<div class="timeline-content">Amazon and early e-commerce websites launch; First McDonald's website created</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">1998</div>
+<div class="timeline-content">Google launches, revolutionizing web search and information retrieval</div>
+</div>
+</div>
+</div>
+<h2 style="text-align: center; color: #FF9800; margin: 40px 0 30px;">Featured Educational Videos on Web 1.0</h2>
+<div class="video-grid">
+<div class="video-card web10" onclick="lmOpenVideo('https://www.youtube.com/embed/mh_iwF7AAq8?autoplay=1')" role="button" tabindex="0">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Evolution of the Internet: Web 1.0</div>
+<div class="video-description">Comprehensive overview of Web 1.0's static pages, limited interactivity, and how the internet began as a read-only medium for information sharing</div>
+<div class="video-meta">
+<span class="meta-tag">Beginner</span>
+<span class="meta-tag">5 min</span>
+</div>
+<a class="learn-more-btn" data-embed="https://www.youtube.com/embed/mh_iwF7AAq8?autoplay=1" href="#" onclick="lmOpenVideo('https://www.youtube.com/embed/mh_iwF7AAq8?autoplay=1'); return false;" target="_blank">Watch here</a>
+</div>
+</div>
+<div class="video-card web10" onclick="lmOpenVideo('https://www.youtube.com/embed/nVFpzTsVdUs?autoplay=1')" role="button" tabindex="0">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">History of the Internet: From MySpace to the Instagram</div>
+<div class="video-description">Deep dive into how the web evolved to mobile social network of today </div>
+<div class="video-meta">
+<span class="meta-tag">Intermediate</span>
+<span class="meta-tag">8 min</span>
+</div>
+<a class="learn-more-btn" data-embed="https://www.youtube.com/watch?v=--gcsXpoDKg" href="#" onclick="lmOpenVideo('https://www.youtube.com/watch?v=cw0jRD7mn1k'); return false;" target="_blank">Watch here</a>
+</div>
+</div>
+<div class="video-card web10">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Tim Berners-Lee &amp; The World Wide Web Invention</div>
+<div class="video-description">Explore the remarkable story of how one person's vision at CERN created the foundations for the modern internet we use today</div>
+<div class="video-meta">
+<span class="meta-tag">Historical</span>
+<span class="meta-tag">6 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/OM6XIICm_qo?si=NzdsQi9UcVGPgCyb" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Web 2.0 Tab -->
+<div class="tab-content" id="web20">
+<div class="web-version web20">
+<h3>👥 Web 2.0: The Social Web (2004-2015)</h3>
+<p><strong>Tagline:</strong> "Read-Write Internet" - The Age of User-Generated Content</p>
+<p>Web 2.0 fundamentally shifted the internet from a content delivery system to a participatory platform. Users became creators, not just consumers. Dynamic websites replaced static pages, allowing real-time interaction. Social media platforms emerged as the dominant force, enabling billions of people to share, connect, and collaborate globally.</p>
+<h4 style="margin-top: 20px; color: #4CAF50;">Key Characteristics:</h4>
+<ul class="features-list">
+<li><strong>User-Generated Content:</strong> Blogs, YouTube videos, Twitter posts, Wikipedia articles created by ordinary users</li>
+<li><strong>Interactive Platforms:</strong> Dynamic web applications (Google Docs, Facebook, Instagram) replaced static pages</li>
+<li><strong>Social Networking:</strong> Platforms like Facebook, Twitter, LinkedIn enabled community building and content sharing</li>
+<li><strong>Mobile-First Design:</strong> Responsive design and mobile apps became essential as smartphones took over</li>
+<li><strong>APIs &amp; Integration:</strong> Applications "talked" to each other, enabling ecosystems of connected services</li>
+<li><strong>Rich Media:</strong> Video, audio, animations became seamless without plugins, thanks to HTML5</li>
+<li><strong>Centralized Control:</strong> Major platforms (Meta, Google, Amazon) controlled data and monetization</li>
+</ul>
+<h4 style="margin-top: 20px; color: #4CAF50;">Timeline Milestones:</h4>
+<div class="timeline">
+<div class="timeline-item">
+<div class="timeline-year">2004</div>
+<div class="timeline-content">Facebook launches; Web 2.0 term coined by Tim O'Reilly</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2005</div>
+<div class="timeline-content">YouTube launches; Mobile phones begin internet access revolution</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2006</div>
+<div class="timeline-content">Twitter launches; Cloud computing with AWS emerges</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2007</div>
+<div class="timeline-content">iPhone released—mobile internet revolution begins</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2010-2015</div>
+<div class="timeline-content">Smartphone dominance; Instagram, Snapchat, and app ecosystems explode; Cloud services become ubiquitous</div>
+</div>
+</div>
+</div>
+<h2 style="text-align: center; color: #4CAF50; margin: 40px 0 30px;">Featured Educational Videos on Web 2.0</h2>
+<div class="video-grid">
+<div class="video-card web20" onclick="lmOpenVideo('https://www.youtube.com/embed/mh_iwF7AAq8?autoplay=1')" role="button" tabindex="0">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Web 2.0: The Social Revolution</div>
+<div class="video-description">Understanding how Web 2.0 transformed the internet into a participatory platform where users create, share, and interact in real-time</div>
+<div class="video-meta">
+<span class="meta-tag">Beginner</span>
+<span class="meta-tag">7 min</span>
+</div>
+<a class="learn-more-btn" data-embed="https://www.youtube.com/embed/mh_iwF7AAq8?autoplay=1" href="#" onclick="lmOpenVideo('https://www.youtube.com/embed/mh_iwF7AAq8?autoplay=1'); return false;" target="_blank">Watch here</a>
+</div>
+</div>
+<div class="video-card web20">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Rise of Social Media &amp; Mobile Internet</div>
+<div class="video-description">How social platforms like Facebook, YouTube, and Twitter became dominant; Mobile revolution and smartphone ecosystem explained</div>
+<div class="video-meta">
+<span class="meta-tag">Intermediate</span>
+<span class="meta-tag">9 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/R9qZNraQs3Y?si=tjuz5Yl_XC2KosdE" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web20">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">User-Generated Content &amp; Cloud Computing</div>
+<div class="video-description">How platforms empowered users to create and share content; Cloud services transformed data storage and application delivery</div>
+<div class="video-meta">
+<span class="meta-tag">Intermediate</span>
+<span class="meta-tag">8 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/Bkx8Egjm2mw?si=SyNK5qcnt6fvRNCc" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web20">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">The Problem with Web 2.0 Centralization</div>
+<div class="video-description">Examining the issues created by centralized platforms controlling user data, privacy concerns, and data monetization without consent</div>
+<div class="video-meta">
+<span class="meta-tag">Advanced</span>
+<span class="meta-tag">10 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/ah3blAfE7-c?si=djubRwgzFg6-AlVx" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Web 3.0 Tab -->
+<div class="tab-content" id="web30">
+<div class="web-version web30">
+<h3>🔗 Web 3.0: The Decentralized Web (2015-Present)</h3>
+<p><strong>Tagline:</strong> "Read-Write-Own Internet" - User-Centric Decentralization</p>
+<p>Web 3.0 represents a fundamental shift away from centralized platforms toward decentralized networks powered by blockchain technology. Users own their data, digital assets, and identity without relying on intermediaries. Smart contracts enable trustless transactions, and decentralized applications (dApps) create new economic models based on token incentives and community governance.</p>
+<h4 style="margin-top: 20px; color: #2196F3;">Key Characteristics:</h4>
+<ul class="features-list">
+<li><strong>Decentralization:</strong> No single company controls the network; power distributed across blockchain nodes</li>
+<li><strong>User Ownership:</strong> Crypto wallets, NFTs, and self-sovereign identity give users full control of their assets and data</li>
+<li><strong>Smart Contracts:</strong> Self-executing code on blockchains enables trustless transactions without intermediaries</li>
+<li><strong>Permissionless Access:</strong> Anyone can participate without permission from centralized gatekeepers</li>
+<li><strong>Token Economics:</strong> Cryptocurrencies and tokens reward participation and value creation</li>
+<li><strong>AI &amp; Machine Learning:</strong> Intelligent systems that learn and adapt to user preferences securely</li>
+<li><strong>Enhanced Privacy:</strong> Cryptographic tools and zero-knowledge proofs protect user data</li>
+<li><strong>Interoperability:</strong> Platforms and services seamlessly connect across different blockchains</li>
+</ul>
+<h4 style="margin-top: 20px; color: #2196F3;">Timeline Milestones:</h4>
+<div class="timeline">
+<div class="timeline-item">
+<div class="timeline-year">2009</div>
+<div class="timeline-content">Bitcoin launched by Satoshi Nakamoto; First blockchain created</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2015</div>
+<div class="timeline-content">Ethereum launches with smart contracts; Web 3.0 concept gains traction</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2017</div>
+<div class="timeline-content">ICO boom; DeFi (Decentralized Finance) begins emerging; NFTs introduced</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2021</div>
+<div class="timeline-content">NFT explosion; Metaverse discussions intensify; Web3 adoption accelerates</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2023-2024</div>
+<div class="timeline-content">Layer-2 scaling solutions mature; DAOs govern communities; AI integrates with blockchain</div>
+</div>
+</div>
+</div>
+<h2 style="text-align: center; color: #2196F3; margin: 40px 0 30px;">Featured Educational Videos on Web 3.0</h2>
+<div class="video-grid">
+<div class="video-card web30" onclick="lmOpenVideo('https://www.youtube.com/embed/mh_iwF7AAq8?autoplay=1')" role="button" tabindex="0">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Web 3.0 Explained: Decentralization &amp; Blockchain</div>
+<div class="video-description">Comprehensive guide to Web 3.0, blockchain technology, decentralized applications, and how users regain control of their data and assets</div>
+<div class="video-meta">
+<span class="meta-tag">Beginner</span>
+<span class="meta-tag">7 min</span>
+</div>
+<a class="learn-more-btn" data-embed="https://youtu.be/5iesIki27zw?si=dG1KiBNrS346-jFX" href="#" onclick="lmOpenVideo('https://www.youtube.com/embed/mh_iwF7AAq8?autoplay=1'); return false;" target="_blank">Watch here</a>
+</div>
+</div>
+<div class="video-card web30">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Smart Contracts &amp; Decentralized Applications (dApps)</div>
+<div class="video-description">Understanding how smart contracts automate trustless transactions and how dApps create new business models without centralized intermediaries</div>
+<div class="video-meta">
+<span class="meta-tag">Intermediate</span>
+<span class="meta-tag">10 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/ZE2HxTmxfrI?si=lyAFoCtDGMQXQZCe" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web30">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">DeFi (Decentralized Finance) Revolution</div>
+<div class="video-description">How DeFi platforms eliminate traditional financial intermediaries, enabling peer-to-peer lending, trading, and investing through blockchain</div>
+<div class="video-meta">
+<span class="meta-tag">Intermediate</span>
+<span class="meta-tag">9 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/17QRFlml4pA?si=kM7fsSBVlhS3QZuI" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web30">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">NFTs &amp; Digital Ownership in Web 3.0</div>
+<div class="video-description">Exploring how NFTs enable true digital ownership, blockchain-based identity, and the metaverse's role in Web 3.0's future</div>
+<div class="video-meta">
+<span class="meta-tag">Beginner</span>
+<span class="meta-tag">8 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/1u72FCD-B9E?si=qqMK_Bp6Tvdcbrqc" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web30">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">DAOs (Decentralized Autonomous Organizations)</div>
+<div class="video-description">How communities govern platforms collectively through smart contracts and tokenized voting, without traditional hierarchies or leadership</div>
+<div class="video-meta">
+<span class="meta-tag">Advanced</span>
+<span class="meta-tag">11 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/KHm0uUPqmVE?si=WqpTNFlfZqVTeqGp" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web30">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Challenges &amp; Future of Web 3.0</div>
+<div class="video-description">Critical analysis of Web 3.0 challenges: scalability, security, regulation, and how these issues are being addressed</div>
+<div class="video-meta">
+<span class="meta-tag">Advanced</span>
+<span class="meta-tag">12 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/AJ7i1awVfvI?si=dejVk8tEUQ-vYR_P" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Web 4.0 Tab -->
+<div class="tab-content" id="web40">
+<div class="web-version web40">
+<h3>🤖 Web 4.0: The Intelligent Web (Emerging)</h3>
+<p><strong>Tagline:</strong> "Autonomous &amp; Intelligent Internet" - AI-Powered Decentralization</p>
+<p>Web 4.0 represents the convergence of Web 3.0's decentralization with advanced artificial intelligence, machine learning, and autonomous systems. The internet becomes increasingly intelligent, predictive, and autonomous. Users interact with AI agents that understand context, anticipate needs, and execute transactions on their behalf. The web evolves from user-driven to agent-driven, where intelligent systems operate semi-autonomously within decentralized networks.</p>
+<h4 style="margin-top: 20px; color: #9C27B0;">Key Characteristics:</h4>
+<ul class="features-list">
+<li><strong>AI Integration:</strong> Advanced machine learning algorithms personalize experiences and automate complex tasks</li>
+<li><strong>Autonomous Agents:</strong> AI systems that act independently on behalf of users, making decisions and executing transactions</li>
+<li><strong>Semantic Understanding:</strong> Machines comprehend context, intent, and nuance in human communication</li>
+<li><strong>Immersive Experiences:</strong> Extended Reality (XR), AR, VR, and metaverse integration for realistic digital worlds</li>
+<li><strong>Decentralized AI:</strong> AI models running on distributed networks rather than centralized cloud servers</li>
+<li><strong>Privacy-Preserving AI:</strong> Federated learning and zero-knowledge proofs protect data while enabling intelligence</li>
+<li><strong>Quantum Computing:</strong> Next-gen computing power enabling solving previously impossible problems</li>
+<li><strong>Human-AI Collaboration:</strong> Seamless interaction between humans and intelligent systems for enhanced productivity</li>
+<li><strong>Predictive Personalization:</strong> Systems anticipate needs before users explicitly request them</li>
+</ul>
+<h4 style="margin-top: 20px; color: #9C27B0;">Timeline Milestones (Projected):</h4>
+<div class="timeline">
+<div class="timeline-item">
+<div class="timeline-year">2024</div>
+<div class="timeline-content">Advanced AI models (GPT-4, Claude 3) reach human-level reasoning; Web 4.0 concepts emerge</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2025-2026</div>
+<div class="timeline-content">Autonomous agents become mainstream; AI + Blockchain integration accelerates</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2027-2030</div>
+<div class="timeline-content">Quantum computing reaches commercial viability; Immersive metaverse platforms mature</div>
+</div>
+<div class="timeline-item">
+<div class="timeline-year">2030+</div>
+<div class="timeline-content">Full Web 4.0 ecosystem operational; AI governs network protocols; Human-AI symbiosis normalized</div>
+</div>
+</div>
+</div>
+<h2 style="text-align: center; color: #9C27B0; margin: 40px 0 30px;">Featured Educational Videos on Web 4.0</h2>
+<div class="video-grid">
+<div class="video-card web40">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Web 4.0: AI + Blockchain = The Future Internet</div>
+<div class="video-description">Exploring how Web 4.0 combines artificial intelligence with decentralization to create autonomous, intelligent systems</div>
+<div class="video-meta">
+<span class="meta-tag">Intermediate</span>
+<span class="meta-tag">10 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/eTE_98Xwlc0?si=KZVxWb_OHrWOfpm1" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web40">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Autonomous AI Agents &amp; Decentralized Networks</div>
+<div class="video-description">How AI agents operate independently within Web 3.0 networks, making decisions and executing transactions autonomously</div>
+<div class="video-meta">
+<span class="meta-tag">Advanced</span>
+<span class="meta-tag">11 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/1974tFVFRsE?si=dr9-XqLtGo47fEXR" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web40">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Metaverse &amp; Immersive Web 4.0</div>
+<div class="video-description">Understanding the convergence of virtual worlds, extended reality, and blockchain-based ownership in the Web 4.0 metaverse</div>
+<div class="video-meta">
+<span class="meta-tag">Beginner</span>
+<span class="meta-tag">9 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/ynOFMp3Uub0?si=eJgcbEb0erIeTLGO" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web40">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Quantum Computing &amp; Next-Gen Internet</div>
+<div class="video-description">How quantum computing enables new possibilities and challenges for Web 4.0, particularly in cryptography and complex computations</div>
+<div class="video-meta">
+<span class="meta-tag">Advanced</span>
+<span class="meta-tag">12 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/RQWpF2Gb-gU?si=XhaFiRUbT2BS58xt" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web40">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">Privacy-Preserving AI in Web 4.0</div>
+<div class="video-description">Exploring federated learning, differential privacy, and zero-knowledge proofs that enable intelligent systems while protecting user data</div>
+<div class="video-meta">
+<span class="meta-tag">Advanced</span>
+<span class="meta-tag">13 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/NJBBE_SN90A?si=77_0VV4oVEXNqrpp" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+<div class="video-card web40">
+<div class="video-placeholder">
+<div class="play-icon">▶</div>
+</div>
+<div class="video-info">
+<div class="video-title">The Road to Web 4.0: Challenges &amp; Opportunities</div>
+<div class="video-description">Critical analysis of Web 4.0's potential while addressing challenges in AI safety, scalability, regulation, and ethical AI governance</div>
+<div class="video-meta">
+<span class="meta-tag">Advanced</span>
+<span class="meta-tag">14 min</span>
+</div>
+<a class="learn-more-btn" href="https://youtu.be/VqFqWIqOB1g?si=3xKtzlFIW_a9_rGr" target="_blank">Watch on YouTube</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Comparison Section -->
+<div style="margin: 60px auto; max-width: 900px;">
+<h2 style="text-align: center; color: var(--color-primary); margin-bottom: 30px; font-size: 2em;">Quick Comparison Table</h2>
+<table class="comparison-table">
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Web 1.0</th>
+<th>Web 2.0</th>
+<th>Web 3.0</th>
+<th>Web 4.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Period</strong></td>
+<td>1990-2004</td>
+<td>2004-2015</td>
+<td>2015-Present</td>
+<td>2024+</td>
+</tr>
+<tr>
+<td><strong>Interaction Model</strong></td>
+<td>Read Only</td>
+<td>Read-Write</td>
+<td>Read-Write-Own</td>
+<td>Autonomous-Intelligent</td>
+</tr>
+<tr>
+<td><strong>Architecture</strong></td>
+<td>Centralized Servers</td>
+<td>Cloud &amp; Centralized</td>
+<td>Decentralized Blockchain</td>
+<td>Distributed AI Networks</td>
+</tr>
+<tr>
+<td><strong>Content</strong></td>
+<td>Static HTML</td>
+<td>Dynamic &amp; Interactive</td>
+<td>User-Owned Assets</td>
+<td>AI-Generated &amp; Personalized</td>
+</tr>
+<tr>
+<td><strong>Data Control</strong></td>
+<td>No User Control</td>
+<td>Platforms Control</td>
+<td>Users Control (Wallets)</td>
+<td>Hybrid: User + AI Agents</td>
+</tr>
+<tr>
+<td><strong>Monetization</strong></td>
+<td>Advertising</td>
+<td>Platform Ads &amp; Data</td>
+<td>Tokenomics &amp; DeFi</td>
+<td>Decentralized &amp; AI-Driven</td>
+</tr>
+<tr>
+<td><strong>Technology Stack</strong></td>
+<td>HTML, HTTP, DNS</td>
+<td>JS, APIs, Databases</td>
+<td>Blockchain, Crypto, Smart Contracts</td>
+<td>AI, Quantum, IoT, XR</td>
+</tr>
+<tr>
+<td><strong>Key Features</strong></td>
+<td>Hyperlinks, Email</td>
+<td>Social, Mobile, Cloud</td>
+<td>Ownership, Privacy, Decentralization</td>
+<td>Intelligence, Autonomy, Immersion</td>
+</tr>
+<tr>
+<td><strong>Privacy</strong></td>
+<td>Limited Concern</td>
+<td>Minimal Protection</td>
+<td>Strong (Cryptography)</td>
+<td>Enhanced (Privacy-Preserving AI)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Closing Section -->
+<div class="intro-section" style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%);">
+<h2>The Future of the Web: Key Takeaways</h2>
+<p><strong>Web 1.0</strong> gave us access to information through a global network of linked documents. It was revolutionary but passive.</p>
+<p><strong>Web 2.0</strong> empowered users to create and share, building global communities and driving the social media explosion. However, it concentrated power in the hands of a few tech giants.</p>
+<p><strong>Web 3.0</strong> is returning power to users through decentralization and blockchain, enabling true ownership of digital assets and data. It's still evolving and faces scalability and regulatory challenges.</p>
+<p><strong>Web 4.0</strong> promises to combine the best of both worlds: the intelligence of AI with the decentralization of blockchain. Autonomous agents, immersive experiences, and privacy-preserving intelligence will reshape how we interact with technology.</p>
+<p style="margin-top: 20px; font-style: italic; color: var(--color-primary);"><strong>Where are we heading?</strong> A more intelligent, private, decentralized, and user-centric internet where technology serves humanity rather than controlling it.</p>
+</div>
+</div>
+<div class="footer">
+<p><strong>Web Evolution Educational Resource</strong></p>
+<p>Learn about the past, present, and future of the internet</p>
+<p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">Last updated: December 2024 | Covering Web 1.0 through Web 4.0</p>
+</div>
+
+</div>
+<div aria-hidden="true" class="lm-modal" id="lm-video-modal">
+<div class="lm-modal-backdrop" onclick="lmCloseVideo()"></div>
+<div aria-label="Video player" aria-modal="true" class="lm-modal-dialog" role="dialog">
+<button aria-label="Close video" class="lm-modal-close" onclick="lmCloseVideo()" type="button">×</button>
+<div class="lm-modal-framewrap">
+<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" frameborder="0" id="lm-video-iframe" src="" title="YouTube video player"></iframe>
+</div>
+</div>
+</div>
+</section><section id="about">
+<h2>About Us</h2>
+<p>This quiz application is a project for an introductory Web and Mobile Systems A.  Y. 2025/26 course.</p>
+<p>Created by:  Uygar Çatal</p>
+</section>
+<section id="auth">
+<div class="auth-container">
+<h2 id="auth-title">Login</h2>
+<div id="login-form">
+<input id="login-username" placeholder="Username" type="text"/>
+<input id="login-password" placeholder="Password" type="password"/>
+<button onclick="performLogin()">Login</button>
+<p>Don't have an account? <a href="#" onclick="showRegisterForm()">Register here</a></p>
+</div>
+<div id="register-form" style="display: none;">
+<input id="reg-username" placeholder="Username" type="text"/>
+<input id="reg-password" placeholder="Password" type="password"/>
+<input id="reg-confirm" placeholder="Confirm Password" type="password"/>
+<button onclick="performRegister()">Register</button>
+<p>Already have an account? <a href="#" onclick="showLoginForm()">Login here</a></p>
+</div>
+</div>
+</section>
+</main>
+<footer>
+<h3>Download Our App</h3>
+<div class="app-links">
+<a href="https://apps.apple.com/app/id123456789" rel="noopener noreferrer" target="_blank">
+<i class="fab fa-apple"></i> Apple App Store
+      </a>
+<a href="https://play.google.com/store/apps/details?id=com.example. app" rel="noopener noreferrer" target="_blank">
+<i class="fab fa-google-play"></i> Google Play Store
+      </a>
+<a href="https://appinventor.mit.edu/" rel="noopener noreferrer" target="_blank">
+<i class="fas fa-cube"></i> MIT App Inventor
+      </a>
+</div>
+<p>© 2025 Web Evolution Quiz. All rights reserved.</p>
+</footer>
+<script>
+    /*
+      JavaScript for the quiz logic and user authentication.  
+      It handles navigation, user login/register, localStorage persistence,
+      question randomization, and score tracking.
+    */
+    
+    // Hamburger menu toggle
+    const hamburgerBtn = document.getElementById('hamburger-menu');
+    const navMenu = document.getElementById('nav-menu');
+
+    hamburgerBtn.addEventListener('click', function() {
+      hamburgerBtn.classList.toggle('active');
+      navMenu.classList. toggle('active');
+    });
+
+    // Close menu when a link is clicked
+    document.querySelectorAll('nav a, nav button').forEach(item => {
+      item.addEventListener('click', function() {
+        hamburgerBtn.classList.remove('active');
+        navMenu.classList.remove('active');
+      });
+    });
+
+    // Close menu when clicking outside
+    document. addEventListener('click', function(event) {
+      const isClickInsideNav = document.querySelector('nav').contains(event.target);
+      const isClickOnHamburger = hamburgerBtn. contains(event.target);
+      
+      if (!isClickInsideNav && !isClickOnHamburger) {
+        hamburgerBtn.classList.remove('active');
+        navMenu.classList.remove('active');
+      }
+    });
+
+    // Local storage user management
+    let users = JSON.parse(localStorage.getItem('users')) || {};
+    let currentUser = localStorage.getItem('currentUser') || null;
+
+    // Upgrade old score format in localStorage (number -> {last, best})
+    let usersRaw = localStorage.getItem('users');
+    if (usersRaw) {
+      let usersParsed = JSON.parse(usersRaw);
+      for (let uname in usersParsed) {
+        if (usersParsed[uname].scores) {
+          for (let quiz in usersParsed[uname].scores) {
+            if (typeof usersParsed[uname]. scores[quiz] === 'number') {
+              let oldScore = usersParsed[uname].scores[quiz];
+              usersParsed[uname].scores[quiz] = { last: oldScore, best: oldScore };
+            }
+          }
+        }
+      }
+      localStorage.setItem('users', JSON.stringify(usersParsed));
+      users = usersParsed;
+    }
+
+    // Function to display Last/Best scores on quiz selection page
+    function updateQuizListScores() {
+      let usersData = JSON.parse(localStorage.getItem('users')) || {};
+      let username = localStorage.getItem('currentUser');
+      const categories = Object.keys(questionSets); 
+      
+      categories.forEach(cat => {
+        const scorePara = document.getElementById(`score-${cat}`);
+        if (! scorePara) return;
+        let lastText = 'N/A';
+        let bestText = 'N/A';
+        
+        if (username && usersData[username] && usersData[username].scores && usersData[username].scores[cat] !== undefined) {
+          const scoreData = usersData[username].scores[cat];
+          const totalQuestions = questionSets[cat].length;
+          
+          if (typeof scoreData === 'object') {
+            lastText = `${scoreData.last}/${totalQuestions}`;
+            bestText = `${scoreData.best}/${totalQuestions}`;
+          } else if (typeof scoreData === 'number') {
+            lastText = `${scoreData}/${totalQuestions}`;
+            bestText = `${scoreData}/${totalQuestions}`;
+          }
+        }
+        scorePara.textContent = `Last: ${lastText}, Best: ${bestText}`;
+      });
+    }
+
+    // Dark mode toggle logic
+    function setDarkMode(enabled) {
+      if (enabled) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode');
+      try { localStorage.setItem('darkMode', enabled ? 'true' : 'false'); } catch (e) {}
+      updateDarkModeToggleText();
+    }
+    function toggleDarkMode() { setDarkMode(!document.body.classList.contains('dark-mode')); }
+    function updateDarkModeToggleText() {
+      const btn = document.getElementById('dark-mode-toggle'); if (! btn) return;
+      btn.textContent = document.body.classList.contains('dark-mode') ? '☀️ Light Mode' : '🌙 Dark Mode';
+    }
+    function initDarkMode() {
+      try {
+        const pref = localStorage.getItem('darkMode');
+        if (pref === 'true') document.body.classList.add('dark-mode');
+        else if (pref === 'false') document.body.classList.remove('dark-mode');
+      } catch (e) {}
+      updateDarkModeToggleText();
+    }
+
+    // Update nav based on login status
+    if (currentUser) {
+      document.getElementById('username-display').textContent = currentUser;
+      document.getElementById('nav-auth').style.display = 'none';
+      document.getElementById('nav-user').style.display = 'block';
+    }
+    // initialize dark mode preference
+    initDarkMode();
+
+    // Placeholder image (1x1 pixel transparent GIF)
+    const placeholderImage = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+    // Question sets for each category (10 questions each)
+    const questionSets = {
+      web1: [
+        {
+          text: 'What best describes Web 1.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Static, read-only websites with little user interaction. ', correct: true },
+            { text: 'Interactive social platforms with user-generated content.', correct: false },
+            { text: 'Intelligent web with semantic data for machines.', correct: false },
+            { text: 'Immersive and fully virtual reality-based experiences.', correct: false }
+          ]
+        },
+        {
+          text: 'Which feature is characteristic of Web 1.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Mostly static web pages with fixed content.', correct: true },
+            { text: 'Social networking and blogging platforms.', correct: false },
+            { text: 'Personalized AI-driven content delivery.', correct: false },
+            { text: 'User collaboration and content sharing.', correct: false }
+          ]
+        },
+        {
+          text: 'During the Web 1.0 era, websites primarily offered: ',
+          image: placeholderImage,
+          answers: [
+            { text: 'Static information and hyperlinks for navigation.', correct: true },
+            { text: 'Platforms for extensive user interaction and content creation.', correct: false },
+            { text: 'Semantic data understood by AI. ', correct: false },
+            { text: 'Virtual reality environments for users.', correct: false }
+          ]
+        },
+        {
+          text: 'Which statement is true about Web 1.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'It was dominated by static, read-only content provided by site owners.', correct: true },
+            { text: 'It introduced social media and interactive content sharing.', correct: false },
+            { text: 'It featured intelligent agents understanding user context.', correct: false },
+            { text: 'It integrated real-time communication and collaboration by default.', correct: false }
+          ]
+        },
+        {
+          text: 'Web 1.0 primarily spans which timeframe?',
+          image: placeholderImage,
+          answers:  [
+            { text: 'Roughly the mid-1990s to early 2000s. ', correct: true },
+            { text: 'Between 2005 and 2015.', correct: false },
+            { text:  'From 2015 to the present day.', correct: false },
+            { text: 'It is a term for the future web. ', correct: false }
+          ]
+        },
+        {
+          text: 'Which of these is an example of a Web 1.0 era website?',
+          image: placeholderImage,
+          answers:  [
+            { text: 'A personal GeoCities homepage with static text and images.', correct: true },
+            { text: 'A social networking site like Facebook. ', correct: false },
+            { text: 'A collaborative encyclopedia like Wikipedia.', correct: false },
+            { text: 'A video sharing platform like YouTube.', correct: false }
+          ]
+        },
+        {
+          text: 'In Web 1.0, websites were likened to online ______ due to their static nature.',
+          image: placeholderImage,
+          answers: [
+            { text: 'brochures (read-only pages)', correct: true },
+            { text: 'forums (discussion boards)', correct: false },
+            { text: 'marketplaces (e-commerce hubs)', correct: false },
+            { text: 'social feeds (user status updates)', correct: false }
+          ]
+        },
+        {
+          text: 'Which phrase best describes the flow of information in Web 1.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'One-way:  from website to user only.', correct: true },
+            { text: 'Two-way: constant interaction between users and site.', correct: false },
+            { text: 'Collaborative: users heavily create and modify content.', correct: false },
+            { text: 'Automated: machine-to-machine data exchange.', correct: false }
+          ]
+        },
+        {
+          text: 'Web 1.0 sites typically had ______ user interaction.',
+          image: placeholderImage,
+          answers: [
+            { text: 'little to no', correct: true },
+            { text: 'extensive', correct: false },
+            { text: 'real-time', correct: false },
+            { text: 'personalized', correct: false }
+          ]
+        },
+        {
+          text: 'Which of the following was NOT a common aspect of Web 1.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Social media and sharing features. ', correct: true },
+            { text: 'Static informational content.', correct: false },
+            { text: 'Web directories for finding sites.', correct: false },
+            { text: 'Personal standalone homepages.', correct: false }
+          ]
+        }
+      ],
+      web2: [
+        {
+          text:  'What is a defining characteristic of Web 2.0? ',
+          image: placeholderImage,
+          answers: [
+            { text: 'User-generated content and participatory culture.', correct: true },
+            { text: 'Static, read-only web pages only.', correct: false },
+            { text: 'Fully AI-driven content with semantic understanding.', correct: false },
+            { text: 'The complete absence of social interaction online.', correct: false }
+          ]
+        },
+        {
+          text: 'Which of the following is an example of a Web 2.0 application?',
+          image: placeholderImage,
+          answers: [
+            { text: 'A social networking site like Facebook.', correct: true },
+            { text: 'A 1990s personal static webpage.', correct: false },
+            { text: 'An AI personal assistant that reads websites for you.', correct: false },
+            { text: 'A basic HTML page with no interactive features.', correct: false }
+          ]
+        },
+        {
+          text: 'Web 2.0 is often called the ______ web.',
+          image: placeholderImage,
+          answers: [
+            { text: 'read-write', correct: true },
+            { text: 'read-only', correct: false },
+            { text:  'semantic', correct: false },
+            { text: 'intelligent', correct: false }
+          ]
+        },
+        {
+          text: 'Which technology became popular during Web 2.0 for dynamic page updates without full reloads?',
+          image:  placeholderImage,
+          answers: [
+            { text: 'AJAX (Asynchronous JavaScript and XML)', correct: true },
+            { text: 'Dial-up modems', correct: false },
+            { text: 'CGI scripts requiring page reloads', correct: false },
+            { text: 'Blockchain transactions', correct: false }
+          ]
+        },
+        {
+          text: 'Which statement is true about Web 2.0? ',
+          image: placeholderImage,
+          answers: [
+            { text: 'Users can interact and collaborate via social media, blogs, and wikis.', correct: true },
+            { text: 'Content is only provided by webmasters, with no user contributions.', correct: false },
+            { text: 'It refers to making web content understandable to machines.', correct: false },
+            { text: 'It is characterized by static websites with no interactive elements.', correct: false }
+          ]
+        },
+        {
+          text: 'What innovation differentiates Web 2.0 from Web 1.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'The ability for users to easily create and share content online.', correct: true },
+            { text: 'The introduction of the first web browsers in the 1990s.', correct: false },
+            { text:  'The use of hypertext links to connect pages. ', correct: false },
+            { text: 'The reliance on punchcard inputs for web navigation.', correct: false }
+          ]
+        },
+        {
+          text: 'Which of these is a Web 2.0 era concept?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Blogs and social media platforms.', correct: true },
+            { text: 'Static online brochures with no user feedback.', correct: false },
+            { text: 'Linked open data and ontologies.', correct: false },
+            { text: 'Text-only bulletin board systems accessed via telnet.', correct: false }
+          ]
+        },
+        {
+          text: 'The term "Web 2.0" became popular around which year?',
+          image: placeholderImage,
+          answers:  [
+            { text: '2004', correct: true },
+            { text: '1994', correct: false },
+            { text: '2015', correct: false },
+            { text: '2020', correct: false }
+          ]
+        },
+        {
+          text: 'Which is NOT typically associated with Web 2.0? ',
+          image: placeholderImage,
+          answers: [
+            { text: 'Static read-only websites with no user contribution.', correct: true },
+            { text: 'Wikipedia and other collaborative projects.', correct: false },
+            { text: 'Social networking and media sharing sites.', correct: false },
+            { text: 'Blogging and content management platforms.', correct: false }
+          ]
+        },
+        {
+          text: 'What role do users play in Web 2.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'They are both content consumers and content producers.', correct: true },
+            { text: 'They only passively view content provided by companies.', correct: false },
+            { text: 'They have no interaction with web content at all.', correct: false },
+            { text: 'They are replaced by AI in creating all content.', correct: false }
+          ]
+        }
+      ],
+      web3: [
+        {
+          text: 'Web 3.0 is often referred to as the ______ web.',
+          image: placeholderImage,
+          answers: [
+            { text: 'semantic', correct: true },
+            { text: 'social', correct: false },
+            { text: 'static', correct: false },
+            { text: 'physical', correct: false }
+          ]
+        },
+        {
+          text: 'Which is a key feature of Web 3.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Semantic metadata that allows machines to understand content.', correct: true },
+            { text: 'Static content delivered without any interaction.', correct: false },
+            { text: 'Web pages where all content is user-generated without machine processing.', correct: false },
+            { text: 'Lack of any social media or user participation. ', correct: false }
+          ]
+        },
+        {
+          text: 'What technology is commonly associated with enabling Web 3.0 features?',
+          image: placeholderImage,
+          answers:  [
+            { text: 'Artificial Intelligence and machine learning. ', correct: true },
+            { text: 'Email and basic HTTP without scripting.', correct: false },
+            { text: 'Cascading Style Sheets (CSS) for layout.', correct: false },
+            { text: 'Dial-up internet modems for connectivity.', correct: false }
+          ]
+        },
+        {
+          text: 'Which statement is true about Web 3.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'It aims to make web content machine-readable and contextually relevant.', correct: true },
+            { text: 'It was the first phase of the web with read-only content.', correct: false },
+            { text: 'It is centered only on user social interactions without automation.', correct: false },
+            { text: 'It refers to browsing the web on mobile devices. ', correct: false }
+          ]
+        },
+        {
+          text: 'Web 3.0 often focuses on personalization.  This means: ',
+          image: placeholderImage,
+          answers: [
+            { text: 'Websites can tailor content to individual users using AI.', correct: true },
+            { text: 'All content is exclusively created by the user community.', correct: false },
+            { text: 'Pages are static and identical for every user.', correct: false },
+            { text: 'User data or preferences are not considered at all.', correct: false }
+          ]
+        },
+        {
+          text: 'An example of a Web 3.0 application is one that: ',
+          image: placeholderImage,
+          answers: [
+            { text: 'Aggregates data from multiple sources and understands context (e.g., intelligent assistants).', correct: true },
+            { text: 'Allows only one-way publishing of content with no feedback.', correct: false },
+            { text: 'Relies solely on user tags without any machine processing.', correct: false },
+            { text: 'Provides no interactive or dynamic features whatsoever.', correct: false }
+          ]
+        },
+        {
+          text: 'Which concept is most closely associated with Web 3.0? ',
+          image: placeholderImage,
+          answers: [
+            { text: 'The Semantic Web as envisioned by Tim Berners-Lee.', correct: true },
+            { text: 'Static personal homepages hosted on GeoCities.', correct: false },
+            { text: 'Social networking websites like MySpace. ', correct: false },
+            { text: 'Text-based bulletin boards accessed via telnet.', correct: false }
+          ]
+        },
+        {
+          text: 'Compared to Web 2.0, Web 3.0 relies more on:',
+          image: placeholderImage,
+          answers:  [
+            { text: 'Intelligent machine processing of data and metadata.', correct: true },
+            { text: 'User-generated content without any machine interpretation.', correct: false },
+            { text: 'Static web pages and manual directory listings.', correct: false },
+            { text: 'One-way communication from provider to consumer.', correct: false }
+          ]
+        },
+        {
+          text: 'Which of the following is NOT typically related to Web 3.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Personal blogs and simple web forums.', correct: true },
+            { text: 'RDF (Resource Description Framework) data structures.', correct: false },
+            { text: 'SPARQL query language for databases.', correct: false },
+            { text: 'Ontologies defining relationships between data.', correct: false }
+          ]
+        },
+        {
+          text: 'Which web era emphasizes machine understanding and intelligent data linking?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Web 3.0', correct: true },
+            { text: 'Web 1.0', correct: false },
+            { text: 'Web 2.0', correct: false },
+            { text: 'None of the above', correct: false }
+          ]
+        }
+      ],
+      web4: [
+        {
+          text: 'Web 4.0 is often described as the ______ web.',
+          image: placeholderImage,
+          answers: [
+            { text: 'symbiotic', correct: true },
+            { text: 'static', correct: false },
+            { text: 'social media', correct: false },
+            { text: 'semantic', correct:  false }
+          ]
+        },
+        {
+          text: 'Which of the following best describes Web 4.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'The merging of AI, IoT, and human interaction in seamless digital ecosystems.', correct: true },
+            { text: 'Static pages served exclusively via mobile devices.', correct: false },
+            { text: 'A return to the basic structure of Web 1.0.', correct: false },
+            { text: 'Social media without any automated processes.', correct: false }
+          ]
+        },
+        {
+          text: 'What is a key characteristic that distinguishes Web 4.0 from Web 3.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Seamless integration of augmented reality, virtual reality, and digital reality.', correct: true },
+            { text: 'The absence of AI and machine learning. ', correct: false },
+            { text: 'A return to read-only content delivery.', correct: false },
+            { text: 'Removal of semantic data from web pages.', correct: false }
+          ]
+        },
+        {
+          text: 'In Web 4.0, the concept of "symbiotic web" implies:',
+          image: placeholderImage,
+          answers: [
+            { text: 'Close collaboration between human intelligence and artificial intelligence.', correct: true },
+            { text: 'Complete replacement of humans by machines in web interactions.', correct: false },
+            { text: 'Elimination of user privacy in favor of data collection.', correct: false },
+            { text: 'Reverting to simple static HTML-only websites.', correct: false }
+          ]
+        },
+        {
+          text: 'Which technology is expected to play a significant role in Web 4.0? ',
+          image: placeholderImage,
+          answers: [
+            { text: 'Internet of Things (IoT) and edge computing.', correct: true },
+            { text: 'Dial-up modems and basic email systems.', correct: false },
+            { text: 'Simple form-based web submissions without automation.', correct: false },
+            { text: 'Static text-only servers without any interactive features.', correct: false }
+          ]
+        },
+        {
+          text: 'Web 4.0 emphasizes creating a more ______ and intelligent digital environment.',
+          image: placeholderImage,
+          answers: [
+            { text: 'immersive', correct: true },
+            { text: 'static', correct: false },
+            { text: 'isolated', correct: false },
+            { text: 'primitive', correct: false }
+          ]
+        },
+        {
+          text: 'An example of a Web 4.0 application would be:',
+          image: placeholderImage,
+          answers:  [
+            { text: 'A personalized virtual assistant with augmented reality features and real-time adaptive responses.', correct: true },
+            { text: 'A basic blog with static articles and no user comments. ', correct: false },
+            { text: 'A simple text-based email system. ', correct: false },
+            { text: 'A website directory listing without any user interaction.', correct: false }
+          ]
+        },
+        {
+          text: 'How does Web 4.0 differ from Web 3.0 in terms of human-computer interaction?',
+          image:  placeholderImage,
+          answers: [
+            { text: 'Web 4.0 aims for more natural, seamless, and multi-modal human-AI collaboration.', correct: true },
+            { text: 'Web 3.0 and Web 4.0 are identical in their approach to interaction.', correct: false },
+            { text: 'Web 4.0 eliminates all forms of machine learning and AI. ', correct: false },
+            { text: 'Web 3.0 is more interactive than Web 4.0.', correct: false }
+          ]
+        },
+        {
+          text: 'Which of the following is NOT associated with Web 4.0?',
+          image: placeholderImage,
+          answers: [
+            { text: 'Static, read-only content delivery with no user customization.', correct: true },
+            { text: 'Augmented and virtual reality experiences integrated seamlessly.', correct: false },
+            { text: 'Real-time AI-driven personalization and adaptation.', correct: false },
+            { text: 'Interconnected IoT devices sharing data intelligently.', correct: false }
+          ]
+        },
+        {
+          text: 'Web 4.0 is anticipated to emerge around which timeframe?',
+          image: placeholderImage,
+          answers:  [
+            { text: 'The 2030s and beyond.', correct: true },
+            { text: 'The 1990s (already happened).', correct: false },
+            { text: 'It is not expected to emerge at all.', correct: false },
+            { text: 'The 2000s (already happened).', correct: false }
+          ]
+        }
+      ]
+    };
+
+    // Quiz state
+    let currentQuiz = null;
+    let currentQuestion = 0;
+    let scores = { correct: 0, wrong: 0, unanswered: 0 };
+    let userAnswered = {};
+    let questionOrder = [];
+
+    function startQuiz(quizType) {
+      currentQuiz = quizType;
+      currentQuestion = 0;
+      scores = { correct: 0, wrong:  0, unanswered:  0 };
+      userAnswered = {};
+      questionOrder = questionSets[quizType].map((_, i) => i).sort(() => Math.random() - 0.5);
+      showSection('quiz');
+      document.getElementById('quiz-title').textContent = `${quizType.toUpperCase()} Quiz`;
+      displayQuestion();
+      updateQuizListScores();
+    }
+
+    function displayQuestion() {
+      if (currentQuestion >= questionSets[currentQuiz].length) {
+        endQuiz();
+        return;
+      }
+      const q = questionSets[currentQuiz][questionOrder[currentQuestion]];
+      document.getElementById('question-text').textContent = q.text;
+      // No question images in this version
+      // // No question images in this version
+      // document.getElementById('question-image').src = q.image;
+      const answersList = document.getElementById('answers');
+      answersList.innerHTML = '';
+      q.answers. forEach((answer, idx) => {
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.textContent = answer. text;
+        btn.onclick = () => selectAnswer(idx, answer. correct);
+        li.appendChild(btn);
+        answersList. appendChild(li);
+      });
+    }
+
+    function selectAnswer(idx, isCorrect) {
+      const buttons = document.querySelectorAll('#answers button');
+      const q = questionSets[currentQuiz][questionOrder[currentQuestion]];
+      userAnswered[currentQuestion] = true;
+      if (isCorrect) {
+        scores.correct++;
+        buttons[idx].classList.add('correct-selected');
+      } else {
+        scores.wrong++;
+        buttons[idx].classList.add('wrong-selected');
+        q.answers.forEach((answer, i) => {
+          if (answer.correct) {
+            buttons[i].classList.add('correct-selected');
+          }
+        });
+      }
+      buttons. forEach(btn => btn.disabled = true);
+      updateScoreboard();
+      setTimeout(() => nextQuestion(), 1500);
+    }
+
+    function nextQuestion() {
+      currentQuestion++;
+      displayQuestion();
+    }
+
+    function skipQuestion() {
+      if (! userAnswered[currentQuestion]) {
+        scores.unanswered++;
+      }
+      nextQuestion();
+      updateScoreboard();
+    }
+
+    function updateScoreboard() {
+      document.getElementById('correct-count').textContent = scores.correct;
+      document.getElementById('wrong-count').textContent = scores.wrong;
+      document.getElementById('unanswered-count').textContent = scores.unanswered;
+    }
+
+    function resetQuiz() {
+      startQuiz(currentQuiz);
+    }
+
+    function endQuiz() {
+      const totalQuestions = questionSets[currentQuiz].length;
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = `
+        <p>Quiz Complete!</p>
+        <p>Correct: <span class="correct">${scores.correct}</span> / ${totalQuestions}</p>
+        <p>Wrong: <span class="wrong">${scores.wrong}</span> / ${totalQuestions}</p>
+        <p>Unanswered: <span class="unanswered">${scores.unanswered}</span> / ${totalQuestions}</p>
+      `;
+      resultDiv.style.display = 'block';
+
+      // Save score to localStorage
+      if (currentUser) {
+        let usersData = JSON.parse(localStorage.getItem('users')) || {};
+        if (!usersData[currentUser]) {
+          usersData[currentUser] = { password: '', scores: {} };
+        }
+        if (!usersData[currentUser]. scores) {
+          usersData[currentUser].scores = {};
+        }
+        
+        if (! usersData[currentUser].scores[currentQuiz]) {
+          usersData[currentUser].scores[currentQuiz] = { last:  0, best: 0 };
+        }
+        
+        usersData[currentUser]. scores[currentQuiz].last = scores.correct;
+        if (scores.correct > usersData[currentUser].scores[currentQuiz]. best) {
+          usersData[currentUser].scores[currentQuiz].best = scores.correct;
+        }
+        
+        localStorage.setItem('users', JSON. stringify(usersData));
+        updateQuizListScores();
+      }
+    }
+
+    // Auth functions
+    function showSection(section) {
+      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+      document.getElementById(section).classList.add('active');
+      if (section === 'quizlist') {
+        updateQuizListScores();
+      }
+    }
+
+    function performLogin() {
+      const username = document. getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const users = JSON.parse(localStorage.getItem('users')) || {};
+      if (username && users[username] && users[username]. password === password) {
+        currentUser = username;
+        localStorage.setItem('currentUser', username);
+        document.getElementById('username-display').textContent = username;
+        document.getElementById('nav-auth').style.display = 'none';
+        document.getElementById('nav-user').style.display = 'block';
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+        showSection('home');
+        updateQuizListScores();
+      } else {
+        alert('Invalid username or password.');
+      }
+    }
+
+    function performRegister() {
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirm = document.getElementById('reg-confirm').value;
+      if (! username || !password) {
+        alert('Please fill in all fields.');
+        return;
+      }
+      if (password !== confirm) {
+        alert('Passwords do not match.');
+        return;
+      }
+      let users = JSON.parse(localStorage. getItem('users')) || {};
+      if (users[username]) {
+        alert('Username already exists.');
+        return;
+      }
+      users[username] = { password, scores: {} };
+      localStorage. setItem('users', JSON.stringify(users));
+      alert('Registration successful! Please log in.');
+      showLoginForm();
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('currentUser');
+      document.getElementById('nav-auth').style.display = 'block';
+      document.getElementById('nav-user').style.display = 'none';
+      document.getElementById('login-username').value = '';
+      document.getElementById('login-password').value = '';
+      showSection('home');
+    }
+
+    function showLoginForm() {
+      document.getElementById('login-form').style.display = 'block';
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('auth-title').textContent = 'Login';
+    }
+
+    function showRegisterForm() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'block';
+      document.getElementById('auth-title').textContent = 'Register';
+      document.getElementById('reg-username').value = '';
+      document.getElementById('reg-password').value = '';
+      document.getElementById('reg-confirm').value = '';
+    }
+
+    // Initialize
+    window.addEventListener('load', () => {
+      updateQuizListScores();
+    });
+  
+
+    // --- Learn More: scoped tab switching ---
+    function lmSwitchTab(e, tabId) {
+      e.preventDefault();
+      const root = document.getElementById('learn-more');
+      if (!root) return;
+
+      root.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      root.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+      const target = root.querySelector('#' + CSS.escape(tabId));
+      if (target) target.classList.add('active');
+      if (e.currentTarget) e.currentTarget.classList.add('active');
+    }
+
+    // --- Learn More: in-page video modal (optional enhancement) ---
+    function lmOpenVideo(embedUrl) {
+      const modal = document.getElementById('lm-video-modal');
+      const iframe = document.getElementById('lm-video-iframe');
+      if (!modal || !iframe) return;
+
+      iframe.src = embedUrl;
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function lmCloseVideo() {
+      const modal = document.getElementById('lm-video-modal');
+      const iframe = document.getElementById('lm-video-iframe');
+      if (!modal || !iframe) return;
+
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      iframe.src = '';
+      document.body.style.overflow = '';
+    }
+
+    // Close modal with ESC + allow Enter/Space on video cards
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') lmCloseVideo();
+      if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('video-card')) {
+        e.preventDefault();
+        e.target.click();
+      }
+    });
+</script>
+</body>
+</html>
